@@ -19,4 +19,10 @@ router.post(
   auth('member', 'admin'), 
   PointControllers.claimProfileBonus
 );
+
+router.post(
+  '/apply-referral', 
+  auth('member', 'admin'), 
+  PointControllers.applyReferral
+);
 export const PointRoutes = router;

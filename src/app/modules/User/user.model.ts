@@ -70,7 +70,11 @@ userSchema.pre('save', async function (next) {
     }
     user.memberNumber = `#${nextNum.toString().padStart(4, '0')}`;
   }
-
+  if (user.isNew && !user.referralCode) {
+    // exp: UN4-A1B2C
+    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+    user.referralCode = `UN4-${randomStr}`;
+  }
 
   if (user.isModified('password') && user.password) {
     user.password = await bcrypt.hash(user.password, 12);

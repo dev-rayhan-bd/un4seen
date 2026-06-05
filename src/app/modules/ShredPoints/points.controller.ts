@@ -77,6 +77,18 @@ const claimProfileBonus = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const applyReferral = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+  const { code } = req.body;
 
+  const result = await PointServices.applyReferralCode(userId, code);
 
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus };
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral};

@@ -164,7 +164,8 @@ const claimedMilestoneIds = await ClaimedCommunityMilestone.find({ user: userId 
     userStats: {
       totalPoints: user?.shredPoints || 0,
       memberNumber: user?.memberNumber,
-      fullName: user?.fullName
+      fullName: user?.fullName,
+      referralCode: user?.referralCode || "",
     },
     dailyLogin: {
       canClaimDaily,
@@ -291,6 +292,73 @@ const checkAndAwardBirthdayReward = async (userId: string) => {
   return { showBirthdayPopup: false };
 };
 
+
+
+
+const applyReferralCode = async (currentUserId: string, code: string) => {
+
+  const referee = await UserModel.findById(currentUserId);
+  if (!referee) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  
+  if (referee.referralCode === code) {
+    throw new AppError(httpStatus.BAD_REQUEST, "You cannot use your own referral code!");
+  }
+
+
+  if (referee.referredBy) {
+    throw new AppError(httpStatus.BAD_REQUEST, "You have already used a referral code!");
+  }
+
+
+  const referrer = await UserModel.findOne({ referralCode: code });
+  if (!referrer) {
+    throw new AppError(httpStatus.NOT_FOUND, "Invalid referral code!");
+  }
+
+
+  await addPoints(
+    referrer._id.toString(), 
+    'referral_success' as any, 
+    POINT_VALUES.REFERRAL_SENDER 
+  );
+
+
+  await addPoints(
+    currentUserId, 
+    'referral_bonus' as any, 
+    POINT_VALUES.REFERRAL_RECEIVER 
+  );
+
+
+  await UserModel.findByIdAndUpdate(currentUserId, {
+    referredBy: referrer._id,
+  });
+
+
+  await sendNotification(
+    referrer._id.toString(),
+    'Referral Success! 🏁',
+    `Your friend joined! You've earned 1000 points.`,
+    'promo'
+  );
+
+
+  await sendNotification(
+    currentUserId,
+    'Welcome Bonus! 🎉',
+    `You've received 200 points for using a referral code!`,
+    'promo'
+  );
+
+  return { message: "Referral successful! You both earned points." };
+};
+
+
+
+
+
+
+
 export const PointServices = {
   addPoints,
   claimDailyPoints,
@@ -300,5 +368,6 @@ export const PointServices = {
     getShredPointsDashboard,
     claimMilestoneReward,
     claimProfileCompletionPoints,
-    checkAndAwardBirthdayReward
+    checkAndAwardBirthdayReward,
+    applyReferralCode
 };
