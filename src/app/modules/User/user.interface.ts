@@ -22,6 +22,8 @@ export type TUser = {
   memberNumber?: string; // e.g: #0001
   role: 'superAdmin'|'admin' | 'member' | 'guest';
   status: 'active' | 'inactive' | 'blocked';
+  referralCode: string;
+  referredBy?: Types.ObjectId;
   fcmToken?: string;
   image?: string;
   shredPoints?: number;
@@ -36,6 +38,8 @@ export type TUser = {
   following: Types.ObjectId[]; 
   followerCount: number;
   followingCount: number;
+lastBirthdayRewardYear?: number; 
+ isProfileBonusClaimed: boolean;
   dob?: Date;
   phoneNumber?: string;
   country?: string;

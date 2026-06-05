@@ -26,6 +26,7 @@ const updateProfileInDB = async (userId: string, payload: Partial<TUser>) => {
       updatedUser.address?.streetAddress && 
       updatedUser.rideInfo?.bikeModel) {
     updatedUser.isProfileComplete = true;
+    
     await updatedUser.save();
   }
 

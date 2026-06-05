@@ -14,6 +14,7 @@ import { RideRoutes } from '../modules/ride/ride.routes';
 import { CompetitionRoutes } from '../modules/Competition/competition.routes';
 import { GiveawayRoutes } from '../modules/Giveway/giveaway.routes';
 import { MilestoneRoutes } from '../modules/Milestone/milestone.routes';
+import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communityMilestone.routes';
 
 
 
@@ -75,6 +76,10 @@ const moduleRoutes = [
   {
     path: '/milestones',
     route: MilestoneRoutes,
+  },
+  {
+    path: '/community-milestones',
+    route: CommunityMilestoneRoutes,
   },
 ];
 

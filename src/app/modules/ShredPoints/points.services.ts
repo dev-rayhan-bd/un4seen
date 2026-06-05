@@ -9,6 +9,8 @@ import { sendNotification } from '../../utils/sendNotification';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { Milestone } from '../Milestone/milestone.model';
 import { ClaimedMilestone } from '../Milestone/claimedMilestone.model';
+import { CommunityMilestone } from '../CommunityMilestone/communityMilestone.model';
+import { ClaimedCommunityMilestone } from '../CommunityMilestone/claimedCommunityMilestone.model';
 
 
 const addPoints = async (userId: string, source: TPointSource, customAmount?: number) => {
@@ -112,17 +114,34 @@ const getShredPointsDashboard = async (userId: string) => {
   const user = await UserModel.findById(userId);
   const totalUsers = await UserModel.countDocuments(); // Community goals
 
-
+  const birthdayStatus = await checkAndAwardBirthdayReward(userId);
   const today = moment().format('YYYY-MM-DD');
   const canClaimDaily = user?.lastDailyClaimDate !== today;
 
-  //( 17,850/25,000 members)
-  const communityGoals = [
-    { title: "25,000 Members", goal: 25000, current: totalUsers, reward: "Free Sticker Pack" },
-    { title: "50,000 Members", goal: 50000, current: totalUsers, reward: "Major Giveaway" }
-  ];
+  const totalActiveMembers = await UserModel.countDocuments({ status: 'active' });
 
-  //  (Sticker Pack, T-Shirt)
+  const milestones = await CommunityMilestone.find({ status: 'active' }).sort({ targetMemberCount: 1 });
+const claimedMilestoneIds = await ClaimedCommunityMilestone.find({ user: userId }).distinct('milestone');
+ const communityMilestones = milestones.map(m => {
+
+    const progress = Math.min((totalActiveMembers / m.targetMemberCount) * 100, 100);
+     const isUnlocked = totalActiveMembers >= m.targetMemberCount;
+  const isClaimed = claimedMilestoneIds.some(id => id.toString() === m._id.toString());
+    return {
+      _id: m._id,
+      title: m.title,
+      description: m.description,
+      image: m.image,
+      targetMembers: m.targetMemberCount,
+      currentMembers: totalActiveMembers,
+      progress: progress.toFixed(2),
+      isUnlocked,
+        isClaimed,
+      rewardType: m.rewardType
+    };
+  });
+
+  //  (Sticker Pack,T-Shirt)
   const allMilestones = await Milestone.find({ status: 'active' }).sort({ pointsRequired: 1 });
   const userClaimedIds = await ClaimedMilestone.find({ user: userId }).distinct('milestone');
 
@@ -151,7 +170,13 @@ const getShredPointsDashboard = async (userId: string) => {
       canClaimDaily,
       points: POINT_VALUES.DAILY_LOGIN
     },
-    communityGoals,
+     profileCompletion: {
+        isComplete: user?.isProfileComplete || false,
+        isClaimed: user?.isProfileBonusClaimed || false, 
+        points: POINT_VALUES.PROFILE_COMPLETION
+      },
+    celebration: birthdayStatus,
+    communityMilestones,
     individualMilestones,
     recentActivity
   };
@@ -162,13 +187,13 @@ const claimMilestoneReward = async (userId: string, milestoneId: string) => {
   const user = await UserModel.findById(userId);
   const milestone = await Milestone.findById(milestoneId);
 
-  if (!milestone) throw new Error("Milestone not found");
+  if (!milestone) throw new AppError(httpStatus.NOT_FOUND, "Milestone not found");
   if ((user?.shredPoints || 0) < milestone.pointsRequired) {
-    throw new Error("Insufficient points to claim this reward");
+  throw new AppError(httpStatus.BAD_REQUEST, "Insufficient points to claim this reward");
   }
 
   const alreadyClaimed = await ClaimedMilestone.findOne({ user: userId, milestone: milestoneId });
-  if (alreadyClaimed) throw new Error("Already claimed");
+  if (alreadyClaimed) throw new AppError(httpStatus.BAD_REQUEST, "Already claimed");
 
   const result = await ClaimedMilestone.create({
     user: userId,
@@ -203,6 +228,7 @@ const claimProfileCompletionPoints = async (userId: string) => {
 
   const bonusPoints = POINT_VALUES.PROFILE_COMPLETION;
   user.shredPoints = (user.shredPoints || 0) + bonusPoints;
+   user.isProfileBonusClaimed = true; 
   await user.save();
 
   const transaction = await PointTransaction.create({
@@ -225,6 +251,45 @@ const claimProfileCompletionPoints = async (userId: string) => {
   };
 };
 
+const checkAndAwardBirthdayReward = async (userId: string) => {
+  const user = await UserModel.findById(userId);
+  if (!user || !user.dob) return { showBirthdayPopup: false };
+
+  const today = new Date();
+  const dob = new Date(user.dob);
+  const currentYear = today.getFullYear();
+
+
+  const isBirthday = 
+    today.getMonth() === dob.getMonth() && 
+    today.getDate() === dob.getDate();
+
+
+  const alreadyAwardedThisYear = user.lastBirthdayRewardYear === currentYear;
+
+  if (isBirthday && !alreadyAwardedThisYear) {
+
+    const bonus = POINT_VALUES.BIRTHDAY_BONUS;
+    user.shredPoints = (user.shredPoints || 0) + bonus;
+    user.lastBirthdayRewardYear = currentYear;
+    await user.save();
+
+
+    await PointTransaction.create({
+      user: userId,
+      points: bonus,
+      source: 'birthday_bonus',
+      description: `Happy Birthday! You've received ${bonus} points.`
+    });
+
+    return { 
+      showBirthdayPopup: true, 
+      birthdayPoints: bonus 
+    };
+  }
+
+  return { showBirthdayPopup: false };
+};
 
 export const PointServices = {
   addPoints,
@@ -234,5 +299,6 @@ export const PointServices = {
   getMyPointHistoryFromDB,
     getShredPointsDashboard,
     claimMilestoneReward,
-    claimProfileCompletionPoints
+    claimProfileCompletionPoints,
+    checkAndAwardBirthdayReward
 };
