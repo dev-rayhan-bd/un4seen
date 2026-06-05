@@ -1,0 +1,15 @@
+import express from 'express';
+import auth from '../../middleware/auth';
+import { PointControllers } from './points.controller';
+
+const router = express.Router();
+
+router.post('/daily-claim', auth('member', 'admin'), PointControllers.claimDaily);
+router.post('/redeem', auth('member', 'admin'), PointControllers.redeem);
+router.post('/social-share', auth('member', 'admin'), PointControllers.socialShare);
+router.get(
+  '/my-history', 
+  auth('member', 'admin'), 
+  PointControllers.getMyHistory
+);
+export const PointRoutes = router;
