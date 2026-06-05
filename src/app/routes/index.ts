@@ -13,6 +13,7 @@ import { RideRoutes } from '../modules/ride/ride.routes';
 
 import { CompetitionRoutes } from '../modules/Competition/competition.routes';
 import { GiveawayRoutes } from '../modules/Giveway/giveaway.routes';
+import { MilestoneRoutes } from '../modules/Milestone/milestone.routes';
 
 
 
@@ -70,6 +71,10 @@ const moduleRoutes = [
   {
     path: '/giveaways',
     route: GiveawayRoutes,
+  },
+  {
+    path: '/milestones',
+    route: MilestoneRoutes,
   },
 ];
 

@@ -12,4 +12,11 @@ router.get(
   auth('member', 'admin'), 
   PointControllers.getMyHistory
 );
+router.get('/dashboard', auth('member', 'admin'), PointControllers.getDashboard);
+router.post('/claim-milestone', auth('member'), PointControllers.claimMilestone);
+router.post(
+  '/claim-profile-bonus', 
+  auth('member', 'admin'), 
+  PointControllers.claimProfileBonus
+);
 export const PointRoutes = router;

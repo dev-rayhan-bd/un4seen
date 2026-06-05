@@ -47,4 +47,36 @@ const getMyHistory = catchAsync(async (req: Request, res: Response) => {
     data: result.result,
   });
 });
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory };
+const getDashboard = catchAsync(async (req: Request, res: Response) => {
+  const result = await PointServices.getShredPointsDashboard(req.user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Dashboard data retrieved successfully',
+    data: result,
+  });
+});
+
+const claimMilestone = catchAsync(async (req: Request, res: Response) => {
+  const { milestoneId } = req.body;
+  const result = await PointServices.claimMilestoneReward(req.user.userId, milestoneId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Reward claimed! Admin will process your shipment.',
+    data: result,
+  });
+});
+const claimProfileBonus = catchAsync(async (req: Request, res: Response) => {
+  const result = await PointServices.claimProfileCompletionPoints(req.user.userId);
+  
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Profile completion bonus added to your account!',
+    data: result,
+  });
+});
+
+
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus };
