@@ -294,16 +294,14 @@ const checkAndAwardBirthdayReward = async (userId: string) => {
 
 
 
-
 const applyReferralCode = async (currentUserId: string, code: string) => {
-
+ 
   const referee = await UserModel.findById(currentUserId);
   if (!referee) throw new AppError(httpStatus.NOT_FOUND, "User not found");
   
   if (referee.referralCode === code) {
     throw new AppError(httpStatus.BAD_REQUEST, "You cannot use your own referral code!");
   }
-
 
   if (referee.referredBy) {
     throw new AppError(httpStatus.BAD_REQUEST, "You have already used a referral code!");
@@ -316,47 +314,57 @@ const applyReferralCode = async (currentUserId: string, code: string) => {
   }
 
 
-  await addPoints(
-    referrer._id.toString(), 
-    'referral_success' as any, 
-    POINT_VALUES.REFERRAL_SENDER 
-  );
-
-
-  await addPoints(
-    currentUserId, 
-    'referral_bonus' as any, 
-    POINT_VALUES.REFERRAL_RECEIVER 
-  );
-
-
-  await UserModel.findByIdAndUpdate(currentUserId, {
-    referredBy: referrer._id,
+  const senderPoints = POINT_VALUES.REFERRAL_SENDER; 
+  await UserModel.findByIdAndUpdate(referrer._id, {
+    $inc: { shredPoints: senderPoints, referralCount: 1 },
+    $addToSet: { referrals: currentUserId }
   });
 
 
-  await sendNotification(
-    referrer._id.toString(),
-    'Referral Success! 🏁',
-    `Your friend joined! You've earned 1000 points.`,
-    'promo'
-  );
+  await PointTransaction.create({
+    user: referrer._id,
+    points: senderPoints,
+    source: 'referral' as any,
+    description: `Earned ${senderPoints} points for inviting a friend.`,
+  });
 
 
-  await sendNotification(
-    currentUserId,
-    'Welcome Bonus! 🎉',
-    `You've received 200 points for using a referral code!`,
-    'promo'
-  );
+  const receiverPoints = POINT_VALUES.REFERRAL_RECEIVER; 
+  await UserModel.findByIdAndUpdate(currentUserId, {
+    $inc: { shredPoints: receiverPoints },
+    referredBy: referrer._id
+  });
 
-  return { message: "Referral successful! You both earned points." };
+
+  await PointTransaction.create({
+    user: currentUserId,
+    points: receiverPoints,
+    source: 'referral' as any,
+    description: `Received ${receiverPoints} welcome points from referral code.`,
+  });
+
+
+  await sendNotification(referrer._id.toString(), 'Referral Success! 🏁', `Your friend joined! You earned ${senderPoints} points.`);
+  await sendNotification(currentUserId, 'Welcome Bonus! 🎉', `You've received ${receiverPoints} points for using a referral code!`);
+
+  return { message: "Referral successful! Both earned points." };
 };
+const getReferralStats = async (userId: string) => {
 
+  const user = await UserModel.findById(userId)
+    .populate('referredBy', 'firstName lastName image memberNumber') 
+    .populate('referrals', 'firstName lastName image memberNumber createdAt');
 
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
 
-
-
+  return {
+    referredBy: user.referredBy || null,
+    totalReferrals: user.referralCount || 0,
+    referralList: user.referrals || [], 
+  };
+};
 
 
 export const PointServices = {
@@ -369,5 +377,6 @@ export const PointServices = {
     claimMilestoneReward,
     claimProfileCompletionPoints,
     checkAndAwardBirthdayReward,
-    applyReferralCode
+    applyReferralCode,
+    getReferralStats
 };

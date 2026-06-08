@@ -43,12 +43,16 @@ const userSchema = new Schema<TUser, UserModelStatic>({
     },
      referralCode: { type: String, unique: true },
   referredBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  referrals: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  referralCount: { type: Number, default: 0 },
+   shopifyCustomerId: { type: String },
     lastBirthdayRewardYear: { type: Number, default: 0 },
     isProfileBonusClaimed: { type: Boolean, default: false },
     isProfileComplete: { type: Boolean, default: false },
     verificationCode: { type: String, select: false },
     isOtpVerified: { type: Boolean, default: false },
     verificationExpire: { type: Date, select: false },
+
     lastDailyClaimDate: { 
   type: String, 
   default: null 

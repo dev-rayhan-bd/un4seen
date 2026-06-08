@@ -8,8 +8,8 @@ export const POINT_VALUES = {
   REFERRAL_JOIN: 200,
   REDEEM_THRESHOLD: 1000, //1000 points needed to redeem,1000 points = $10 discount
   REDEEM_VALUE_USD: 10,
-   REFERRAL_SENDER: 200, 
-  REFERRAL_RECEIVER: 50,
+   REFERRAL_SENDER: 1000, 
+  REFERRAL_RECEIVER: 200,
 };
 
 export type TPointSource = 

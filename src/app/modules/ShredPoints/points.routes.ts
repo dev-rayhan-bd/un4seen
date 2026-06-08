@@ -25,4 +25,9 @@ router.post(
   auth('member', 'admin'), 
   PointControllers.applyReferral
 );
+router.get(
+  '/referral-stats',
+  auth('member', 'admin', 'superAdmin'),
+  PointControllers.getReferralStats
+);
 export const PointRoutes = router;

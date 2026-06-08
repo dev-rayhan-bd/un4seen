@@ -90,5 +90,15 @@ const applyReferral = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
+const getReferralStats = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+  const result = await PointServices.getReferralStats(userId);
 
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Referral statistics retrieved successfully',
+    data: result,
+  });
+});
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats};

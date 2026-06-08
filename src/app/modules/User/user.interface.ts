@@ -23,7 +23,9 @@ export type TUser = {
   role: 'superAdmin'|'admin' | 'member' | 'guest';
   status: 'active' | 'inactive' | 'blocked';
   referralCode: string;
-  referredBy?: Types.ObjectId;
+  referredBy?: Types.ObjectId | TUser; 
+  referrals: Types.ObjectId[];      
+  referralCount: number;   
   fcmToken?: string;
   image?: string;
   shredPoints?: number;
