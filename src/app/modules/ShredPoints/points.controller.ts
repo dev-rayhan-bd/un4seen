@@ -3,6 +3,9 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import { PointServices } from './points.services';
+import AppError from '../../errors/AppError';
+import uploadImage from '../../middleware/upload';
+
 
 const claimDaily = catchAsync(async (req: Request, res: Response) => {
   const result = await PointServices.claimDailyPoints(req.user.userId);
@@ -101,4 +104,44 @@ const getReferralStats = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats};
+const submitProof = catchAsync(async (req: Request, res: Response) => {
+    if (!req.file) throw new AppError(httpStatus.BAD_REQUEST, "Proof screenshot is required");
+    const imageUrl = await uploadImage(req);
+    
+    const data = req.body.data ? JSON.parse(req.body.data) : req.body;
+    const result = await PointServices.submitSocialProof(req.user.userId, {
+        ...data,
+        proofImage: imageUrl
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.CREATED,
+        success: true,
+        message: 'Proof submitted! Points will be awarded after admin review.',
+        data: result,
+    });
+});
+
+
+const adminReview = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, adminComment } = req.body;
+    const result = await PointServices.reviewSubmission(id as string, status, adminComment);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Submission ${status} successfully`,
+        data: result,
+    });
+});
+const getPendingSubmissions = catchAsync(async (req: Request, res: Response) => {
+    const result = await PointServices.getAllPendingSubmissions(req.query);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'Pending submissions retrieved successfully',
+        data: result,
+    });
+});
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats, submitProof, adminReview, getPendingSubmissions};

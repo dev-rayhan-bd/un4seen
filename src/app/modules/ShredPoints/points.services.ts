@@ -11,6 +11,7 @@ import { Milestone } from '../Milestone/milestone.model';
 import { ClaimedMilestone } from '../Milestone/claimedMilestone.model';
 import { CommunityMilestone } from '../CommunityMilestone/communityMilestone.model';
 import { ClaimedCommunityMilestone } from '../CommunityMilestone/claimedCommunityMilestone.model';
+import { SocialSubmission } from './socialSubmission.model';
 
 
 const addPoints = async (userId: string, source: TPointSource, customAmount?: number) => {
@@ -365,7 +366,68 @@ const getReferralStats = async (userId: string) => {
     referralList: user.referrals || [], 
   };
 };
+const submitSocialProof = async (userId: string, payload: any) => {
 
+  const alreadyPending = await SocialSubmission.findOne({
+    user: userId,
+    platform: payload.platform,
+    status: 'pending'
+  });
+
+  if (alreadyPending) {
+    throw new AppError(httpStatus.BAD_REQUEST, `You already have a pending submission for ${payload.platform}`);
+  }
+
+  const points = payload.platform === 'google_review' ? POINT_VALUES.GOOGLE_REVIEW : POINT_VALUES.SOCIAL_SHARE;
+
+  const result = await SocialSubmission.create({
+    ...payload,
+    user: userId,
+    pointsToAward: points
+  });
+
+  return result;
+};
+
+const getAllPendingSubmissions = async (query: Record<string, unknown>) => {
+    const submissionQuery = new QueryBuilder(
+        SocialSubmission.find({ status: 'pending' }).populate('user', 'firstName lastName image memberNumber'),
+        query
+    ).filter().sort().paginate().fields();
+
+    const result = await submissionQuery.modelQuery;
+    const meta = await submissionQuery.countTotal();
+    return { meta, result };
+};
+
+const reviewSubmission = async (submissionId: string, status: 'approved' | 'rejected', adminComment?: string) => {
+    const submission = await SocialSubmission.findById(submissionId);
+    if (!submission) throw new AppError(httpStatus.NOT_FOUND, "Submission not found");
+    if (submission.status !== 'pending') throw new AppError(httpStatus.BAD_REQUEST, "Already reviewed");
+
+    submission.status = status;
+    submission.adminComment = adminComment;
+    await submission.save();
+
+    if (status === 'approved') {
+   
+        await PointServices.addPoints(
+            submission.user.toString(), 
+            `share_${submission.platform}` as any, 
+            submission.pointsToAward
+        );
+    } else {
+
+        await sendNotification(
+            submission.user.toString(),
+            'Submission Rejected ❌',
+            `Your ${submission.platform} proof was rejected. ${adminComment || ''}`,
+            'general'
+        );
+    }
+
+    return submission;
+};
 
 export const PointServices = {
   addPoints,
@@ -378,5 +440,8 @@ export const PointServices = {
     claimProfileCompletionPoints,
     checkAndAwardBirthdayReward,
     applyReferralCode,
-    getReferralStats
+    getReferralStats,
+    submitSocialProof,
+    getAllPendingSubmissions,
+    reviewSubmission
 };

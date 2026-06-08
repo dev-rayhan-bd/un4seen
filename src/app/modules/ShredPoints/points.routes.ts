@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../../middleware/auth';
 import { PointControllers } from './points.controller';
+import { upload } from '../../middleware/multer';
 
 const router = express.Router();
 
@@ -29,5 +30,24 @@ router.get(
   '/referral-stats',
   auth('member', 'admin', 'superAdmin'),
   PointControllers.getReferralStats
+);
+router.post(
+    '/submit-proof', 
+    auth('member', 'admin'), 
+    upload.single('image'), 
+    PointControllers.submitProof
+);
+
+
+router.get(
+    '/admin/pending-proofs', 
+    auth('admin', 'superAdmin'), 
+    PointControllers.getPendingSubmissions
+);
+
+router.patch(
+    '/admin/review-proof/:id', 
+    auth('admin', 'superAdmin'), 
+    PointControllers.adminReview
 );
 export const PointRoutes = router;
