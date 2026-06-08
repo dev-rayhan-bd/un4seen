@@ -26,17 +26,18 @@ const getCompetitionGallery = async (competitionId: string, currentUserId?: stri
     .populate('user', 'fullName image memberNumber')
     .sort({ heartCount: -1 });
 
-  const modifiedResult = result.map((entry) => {
+  return result.map((entry) => {
     const entryObj = entry.toObject();
+
+    const isHearted = currentUserId 
+      ? entry.hearts.map(id => id.toString()).includes(currentUserId.toString()) 
+      : false;
+
     return {
       ...entryObj,
-      isHearted: currentUserId 
-        ? entry.hearts.some((id) => id.toString() === currentUserId.toString()) 
-        : false,
+      isHearted,
     };
   });
-
-  return modifiedResult;
 };
 const createCompetitionIntoDB = async (payload: TCompetition) => {
   const now = new Date();
@@ -56,7 +57,7 @@ const createCompetitionIntoDB = async (payload: TCompetition) => {
   return result;
 };
 
-const getAllCompetitionsFromDB = async (query: Record<string, unknown>) => {
+const getAllCompetitionsFromDB = async (query: Record<string, unknown>, currentUserId?: string) => {
   const competitionQuery = new QueryBuilder(Competition.find(), query)
     .filter()
     .sort()

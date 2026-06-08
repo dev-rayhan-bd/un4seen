@@ -41,13 +41,13 @@ router.post(
 
 router.get(
     '/admin/pending-proofs', 
-    auth('admin', 'superAdmin'), 
+    // auth('admin', 'superAdmin'), 
     PointControllers.getPendingSubmissions
 );
 
 router.patch(
     '/admin/review-proof/:id', 
-    auth('admin', 'superAdmin'), 
+    // auth('admin', 'superAdmin'), 
     PointControllers.adminReview
 );
 export const PointRoutes = router;

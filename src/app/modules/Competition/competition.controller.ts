@@ -8,14 +8,13 @@ import { Request, Response } from 'express';
 import AppError from '../../errors/AppError';
 
 const submitEntry = catchAsync(async (req: Request, res: Response) => {
-  // রাউটের মিডলওয়্যার আগেই req.body.data কে পার্স করে req.body তে সেট করে দিয়েছে
+  
   const payload = req.body; 
 
   if (!req.file) {
     throw new AppError(httpStatus.BAD_REQUEST, "Design image is required");
   }
 
-  // ইমেজ আপলোড
   const imageUrl = await uploadImage(req); 
   payload.image = imageUrl;
 
@@ -29,7 +28,8 @@ const submitEntry = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getGallery = catchAsync(async (req, res) => {
-  const result = await CompetitionServices.getCompetitionGallery(req.params.id as string);
+ const currentUserId = req.user?.userId; 
+  const result = await CompetitionServices.getCompetitionGallery(req.params.id as string, currentUserId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -66,7 +66,8 @@ const createCompetition = catchAsync(async (req: Request, res: Response) => {
 
 
 const getAllCompetitions = catchAsync(async (req: Request, res: Response) => {
-  const result = await CompetitionServices.getAllCompetitionsFromDB(req.query);
+  const currentUserId = req.user?.userId;
+  const result = await CompetitionServices.getAllCompetitionsFromDB(req.query, currentUserId );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

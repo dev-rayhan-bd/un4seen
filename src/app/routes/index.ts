@@ -15,6 +15,7 @@ import { CompetitionRoutes } from '../modules/Competition/competition.routes';
 import { GiveawayRoutes } from '../modules/Giveway/giveaway.routes';
 import { MilestoneRoutes } from '../modules/Milestone/milestone.routes';
 import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communityMilestone.routes';
+import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 
 
 
@@ -81,6 +82,11 @@ const moduleRoutes = [
     path: '/community-milestones',
     route: CommunityMilestoneRoutes,
   },
+
+  {
+    path: '/test-rider',
+    route: TestRiderRoutes,
+  }
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

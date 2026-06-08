@@ -26,13 +26,13 @@ router.patch(
   CompetitionControllers.toggleHeartEntry
 );
 
-
+// auth(USER_ROLE.member, USER_ROLE.admin,USER_ROLE.superAdmin)
 router.get('/all', CompetitionControllers.getAllCompetitions);
 router.get('/running', CompetitionControllers.getRunningCompetition);
 
 
 
-router.get('/gallery/:id', CompetitionControllers.getGallery);
+router.get('/gallery/:id',auth(USER_ROLE.member, USER_ROLE.admin), CompetitionControllers.getGallery);
 
 router.get('/leaderboard/:id', CompetitionControllers.getLeaderboard);
 
