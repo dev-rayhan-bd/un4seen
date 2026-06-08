@@ -22,19 +22,16 @@ const generateAIMusic = async (mood: string) => {
 };
 
 const createStoryInDB = async (userId: string, payload: any) => {
+  const combinedInput = [payload.mood, payload.prompt].filter(Boolean).join(", ");
 
-  const aiInput = payload.prompt || payload.mood;
-
-  if (aiInput && process.env.MUBERT_API_KEY) {
-    console.log(`🎵 Generating AI Music for: ${aiInput}...`);
+  if (combinedInput && process.env.MUBERT_API_KEY) {
+    console.log(`🎵 Generating AI Music for: ${combinedInput}...`);
     
-
-    const musicUrl = await generateAIMusic(aiInput);
+    const musicUrl = await generateAIMusic(combinedInput);
     if (musicUrl) {
       payload.musicUrl = musicUrl;
     }
   }
-
 
   const result = await Story.create({
     ...payload,
