@@ -18,6 +18,7 @@ import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communit
 import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 import { StoryRoutes } from '../modules/Story/story.routes';
 import { BikeRoutes } from '../modules/Bike/bike.routes';
+import { MusicRoutes } from '../modules/Music/music.routes';
 
 
 
@@ -96,6 +97,10 @@ const moduleRoutes = [
   {
     path: '/bikes',
     route: BikeRoutes,
+  },
+  {
+    path: '/music',
+    route: MusicRoutes,
   }
 ];
 

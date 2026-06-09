@@ -23,7 +23,8 @@ const createStory = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getStories = catchAsync(async (req: Request, res: Response) => {
-  const result = await StoryServices.getAllStoriesFromDB(req.user.userId);
+  const result = await StoryServices.getAllStoriesFromDB(req.user.userId, req.user.role);
+  
   sendResponse(res, {
     statusCode: 200,
     success: true,

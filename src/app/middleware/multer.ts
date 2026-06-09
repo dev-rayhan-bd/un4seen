@@ -4,10 +4,16 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 
 const fileFilter = (req: any, file: any, cb: any) => {
-  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+
+  if (
+    file.mimetype.startsWith('image/') || 
+    file.mimetype === 'application/pdf' ||
+    file.mimetype.startsWith('audio/') || 
+    file.mimetype.startsWith('video/')  
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Only images and pdf are allowed!'), false);
+    cb(new Error('Only images, pdf, audio and video are allowed!'), false);
   }
 };
 

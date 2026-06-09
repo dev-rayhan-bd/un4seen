@@ -6,9 +6,7 @@ const storySchema = new Schema<TStory>(
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
     contentType: { type: String, enum: ['image', 'video'], required: true },
-    musicUrl: { type: String },
-    mood: { type: String },
-        prompt: { type: String },
+    music: { type: Schema.Types.ObjectId, ref: 'Music' },
     caption: { type: String },
     category: { 
       type: String, 
