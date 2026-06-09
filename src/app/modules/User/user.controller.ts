@@ -127,6 +127,18 @@ const getMyFollowing = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getHomePageData = catchAsync(async (req, res) => {
+  const result = await UserServices.getHomePageDataFromDB(req.user.userId);
+  
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Home page data retrieved successfully',
+    data: result,
+  });
+});
+
+
 export const UserControllers = {
   getMyProfile,
   updateProfile,
@@ -136,5 +148,6 @@ export const UserControllers = {
   getFollowersList,
   getFollowingList,
   getMyFollowers,
-  getMyFollowing
+  getMyFollowing,
+  getHomePageData
 };

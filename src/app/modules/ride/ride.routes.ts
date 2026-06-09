@@ -31,6 +31,8 @@ router.patch(
 
 router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), RideControllers.getLeaderboard);
 
-router.patch('/:id/set-winner', auth(USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.makeBikeOfWeek);
+router.patch('/:id/set-winner',
+   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+    RideControllers.makeBikeOfWeek);
 
 export const RideRoutes = router;

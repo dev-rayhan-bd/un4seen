@@ -32,6 +32,7 @@ router.get(
   auth(USER_ROLE.member, USER_ROLE.admin), 
   UserControllers.getMyFollowing
 );
+router.get('/home-feed', auth('member', 'admin', 'guest'), UserControllers.getHomePageData);
 router.patch(
   '/follow/:id',
   auth(USER_ROLE.member, USER_ROLE.admin),

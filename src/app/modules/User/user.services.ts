@@ -1,8 +1,13 @@
+import moment from 'moment';
 import QueryBuilder from '../../builder/QueryBuilder';
 import AppError from '../../errors/AppError';
 import { TUser } from './user.interface';
 import { UserModel} from './user.model';
 import httpStatus from 'http-status';
+import { Giveaway } from '../Giveway/giveaway.model';
+import { Ride } from '../ride/ride.model';
+import { PointTransaction } from '../ShredPoints/points.model';
+import { Story } from '../Story/story.model';
 const getMyProfileFromDB = async (userId: string) => {
   const result = await UserModel.findById(userId);
   return result;
@@ -148,6 +153,85 @@ const getFollowingListFromDB = async (userId: string, query: Record<string, unkn
   return { meta, result };
 };
 
+
+
+
+const getHomePageDataFromDB = async (userId: string) => {
+  const now = new Date();
+  const startOfWeek = moment().startOf('isoWeek').toDate();
+
+
+  const user = await UserModel.findById(userId).select('firstName lastName fullName image memberNumber status');
+
+//weekly giveawaqy
+  const weeklyGiveaway = await Giveaway.findOne({ 
+    status: 'pending', 
+    isMajorGiveaway: false,
+    startDate: { $lte: now },
+    endDate: { $gte: now } 
+  }).sort({ weekNumber: 1 });
+
+
+  const bikeOfTheWeek = await Ride.findOne({ isBikeOfTheWeek: true })
+    .populate('user', 'firstName lastName image memberNumber country');
+
+  // major giveaway
+  const majorGiveaway = await Giveaway.findOne({ 
+    isMajorGiveaway: true, 
+    status: 'pending' 
+  }).sort({ endDate: 1 });
+
+  //recent winner
+  const recentWinners = await Giveaway.find({ status: 'completed', winner: { $exists: true } })
+    .sort({ updatedAt: -1 })
+    .limit(3)
+    .populate('winner', 'firstName lastName image memberNumber');
+
+  // this week stats
+  const pointsThisWeek = await PointTransaction.aggregate([
+    { $match: { user: user?._id, createdAt: { $gte: startOfWeek }, points: { $gt: 0 } } },
+    { $group: { _id: null, total: { $sum: "$points" } } }
+  ]);
+
+  //new stories from last 247 hours
+  const newStoriesCount = await Story.countDocuments({ 
+    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    isDeleted: false 
+  });
+
+  return {
+    user: {
+      fullName: user?.fullName,
+      image: user?.image,
+      isSyndicateMember: user?.status === 'active'
+    },
+    weeklyGiveaway: weeklyGiveaway ? {
+        ...weeklyGiveaway.toObject(),
+        countdownEnd: weeklyGiveaway.endDate 
+    } : null,
+    bikeOfTheWeek,
+    majorGiveaway,
+    recentWinners,
+    thisWeekStats: {
+      pointsEarned: pointsThisWeek[0]?.total || 0,
+      newStoriesPosted: newStoriesCount
+    }
+  };
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const UserServices = {
   getMyProfileFromDB,
   updateProfileInDB,
@@ -155,5 +239,6 @@ export const UserServices = {
   unfollowUserInDB,
   getSingleUserFromDB,
   getFollowersListFromDB,
-  getFollowingListFromDB
+  getFollowingListFromDB,
+  getHomePageDataFromDB
 };

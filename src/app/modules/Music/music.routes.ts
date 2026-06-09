@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 router.post('/upload', 
-    // auth('admin', 'superAdmin'), 
+    auth('admin', 'superAdmin'), 
     upload.single('audio'), MusicControllers.uploadMusic);
 
 
