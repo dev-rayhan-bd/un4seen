@@ -41,16 +41,7 @@ const createStoryInDB = async (userId: string, payload: any) => {
   return result;
 };
 
-const getAllStoriesFromDB = async (currentUserId: string) => {
-  const stories = await Story.find({ isDeleted: false })
-    .populate('user', 'firstName lastName image memberNumber')
-    .sort({ createdAt: -1 });
 
-  return stories.map(story => ({
-    ...story.toObject(),
-    isHearted: story.hearts.includes(currentUserId as any)
-  }));
-};
 
 const toggleHeartInDB = async (userId: string, storyId: string) => {
   const story = await Story.findById(storyId);
@@ -63,5 +54,54 @@ const toggleHeartInDB = async (userId: string, storyId: string) => {
     return await Story.findByIdAndUpdate(storyId, { $addToSet: { hearts: userId }, $inc: { heartCount: 1 } }, { new: true });
   }
 };
+import { SavedStory } from './savedStory.model';
+import moment from 'moment';
 
-export const StoryServices = { createStoryInDB, getAllStoriesFromDB, toggleHeartInDB };
+
+const toggleSaveStoryInDB = async (userId: string, storyId: string) => {
+  const alreadySaved = await SavedStory.findOne({ user: userId, story: storyId });
+
+  if (alreadySaved) {
+    await SavedStory.findByIdAndDelete(alreadySaved._id);
+    return { isSaved: false, message: "Story removed from saved" };
+  } else {
+    await SavedStory.create({ user: userId, story: storyId });
+    return { isSaved: true, message: "Story saved successfully" };
+  }
+};
+
+const getMySavedStoriesFromDB = async (userId: string) => {
+  return await SavedStory.find({ user: userId })
+    .populate({
+      path: 'story',
+      populate: { path: 'user', select: 'firstName lastName image memberNumber' }
+    })
+    .sort({ createdAt: -1 });
+};
+
+
+const getAllStoriesFromDB = async (currentUserId: string) => {
+
+  const stories = await Story.find({ 
+    isDeleted: false,
+    expiresAt: { $gt: new Date() } 
+  })
+    .populate('user', 'firstName lastName image memberNumber')
+    .sort({ createdAt: -1 });
+
+  const storiesWithStatus = await Promise.all(
+    stories.map(async (story) => {
+      const isSaved = await SavedStory.exists({ user: currentUserId, story: story._id });
+      return {
+        ...story.toObject(),
+        isHearted: story.hearts.includes(currentUserId as any),
+        isSaved: !!isSaved,
+    
+        timeAgo: moment(story.createdAt).fromNow(), 
+      };
+    })
+  );
+
+  return storiesWithStatus;
+};
+export const StoryServices = { createStoryInDB, getAllStoriesFromDB, toggleHeartInDB, toggleSaveStoryInDB, getMySavedStoriesFromDB };

@@ -24,6 +24,7 @@ const storySchema = new Schema<TStory>(
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), 
       index: { expires: 0 } 
     },
+    createdAt: { type: Date, default: Date.now }
   },
   { timestamps: true }
 );

@@ -41,5 +41,26 @@ const toggleHeart = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const toggleSaveStory = catchAsync(async (req, res) => {
+  const { id } = req.params; // Story ID
+  const result = await StoryServices.toggleSaveStoryInDB(req.user.userId, id as string);
+  
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: result.message,
+    data: result,
+  });
+});
 
-export const StoryControllers = { createStory, getStories, toggleHeart };
+const getSavedStories = catchAsync(async (req, res) => {
+  const result = await StoryServices.getMySavedStoriesFromDB(req.user.userId);
+  
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Saved stories retrieved successfully',
+    data: result,
+  });
+});
+export const StoryControllers = { createStory, getStories, toggleHeart, toggleSaveStory, getSavedStories };

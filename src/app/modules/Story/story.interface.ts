@@ -14,4 +14,5 @@ export type TStory = {
   isPremium: boolean; 
   expiresAt: Date; // Auto delete after 24h
   isDeleted: boolean;
+  createdAt: Date;
 };

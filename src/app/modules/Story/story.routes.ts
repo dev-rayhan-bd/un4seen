@@ -26,4 +26,8 @@ router.post(
 router.get('/', auth('member', 'admin', 'guest'), StoryControllers.getStories);
 router.patch('/:id/heart', auth('member', 'admin'), StoryControllers.toggleHeart);
 
+router.post('/:id/save', auth('member', 'admin'), StoryControllers.toggleSaveStory);
+
+
+router.get('/my-saved', auth('member', 'admin'), StoryControllers.getSavedStories);
 export const StoryRoutes = router;

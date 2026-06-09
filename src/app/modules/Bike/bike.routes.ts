@@ -12,7 +12,7 @@ router.post(
   BikeControllers.addBike
 );
 
-router.get('/profile', auth('member'), BikeControllers.getMyBikeProfile);
+router.get('/profile', auth('member'), BikeControllers.getUserBikeProfile);
 
 router.patch(
   '/:id', 

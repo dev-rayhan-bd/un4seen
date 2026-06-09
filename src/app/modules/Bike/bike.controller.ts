@@ -23,14 +23,20 @@ const addBike = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getMyBikeProfile = catchAsync(async (req, res) => {
-  const activeBike = await BikeServices.getMyActiveBikeFromDB(req.user.userId as string);
-  const retiredBikes = await BikeServices.getRetiredBikesFromDB(req.user.userId as string);
+const getUserBikeProfile = catchAsync(async (req, res) => {
+
+  const targetUserId = (req.params.id as string) || (req.user.userId as string);
+  
+
+  const viewerId = req.user.userId;
+
+  const activeBike = await BikeServices.getMyActiveBikeFromDB(targetUserId, viewerId);
+  const retiredBikes = await BikeServices.getRetiredBikesFromDB(targetUserId, viewerId as string);
 
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Bike profile retrieved',
+    message: 'Bike profile retrieved successfully',
     data: { activeBike, retiredBikes },
   });
 });
@@ -145,4 +151,4 @@ const deleteGalleryImages = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-export const BikeControllers = { addBike, getMyBikeProfile, updateBike, toggleSaveBike, getSavedBikes, getBikeGallery, getSingleBike, uploadToGallery, deleteGalleryImages };
+export const BikeControllers = { addBike, getUserBikeProfile, updateBike, toggleSaveBike, getSavedBikes, getBikeGallery, getSingleBike, uploadToGallery, deleteGalleryImages };

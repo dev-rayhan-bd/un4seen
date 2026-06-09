@@ -16,13 +16,12 @@ const addBikeToDB = async (userId: string, payload: Partial<TBike>) => {
   return result;
 };
 
-const getMyActiveBikeFromDB = async (userId: string) => {
-  const bike = await Bike.findOne({ user: userId, isRetired: false });
-  
+const getMyActiveBikeFromDB = async (targetUserId: string, viewerId: string) => {
+  const bike = await Bike.findOne({ user: targetUserId, isRetired: false });
   if (!bike) return null;
 
 
-  const isSaved = await SavedBike.exists({ user: userId, bike: bike._id });
+  const isSaved = await SavedBike.exists({ user: viewerId, bike: bike._id });
 
   return {
     ...bike.toObject(),
@@ -30,21 +29,19 @@ const getMyActiveBikeFromDB = async (userId: string) => {
   };
 };
 
-const getRetiredBikesFromDB = async (userId: string) => {
-  const bikes = await Bike.find({ user: userId, isRetired: true }).sort({ createdAt: -1 });
 
+const getRetiredBikesFromDB = async (targetUserId: string, viewerId: string) => {
+  const bikes = await Bike.find({ user: targetUserId, isRetired: true }).sort({ createdAt: -1 });
 
-  const bikesWithSavedStatus = await Promise.all(
+  return await Promise.all(
     bikes.map(async (bike) => {
-      const isSaved = await SavedBike.exists({ user: userId, bike: bike._id });
+      const isSaved = await SavedBike.exists({ user: viewerId, bike: bike._id });
       return {
         ...bike.toObject(),
         isSaved: !!isSaved,
       };
     })
   );
-
-  return bikesWithSavedStatus;
 };
 
 
