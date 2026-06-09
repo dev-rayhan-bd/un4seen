@@ -19,6 +19,7 @@ import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 import { StoryRoutes } from '../modules/Story/story.routes';
 import { BikeRoutes } from '../modules/Bike/bike.routes';
 import { MusicRoutes } from '../modules/Music/music.routes';
+import { IdeaRoutes } from '../modules/Idea/idea.routes';
 
 
 
@@ -101,6 +102,10 @@ const moduleRoutes = [
   {
     path: '/music',
     route: MusicRoutes,
+  },
+  {
+    path: '/ideas',
+    route: IdeaRoutes,
   }
 ];
 
