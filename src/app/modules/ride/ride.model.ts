@@ -7,8 +7,14 @@ const rideSchema = new Schema<TRide>(
     bikeModel: { type: String, required: true },
     description: { type: String, required: true },
     image: { type: String, required: true },
-    hearts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    heartCount: { type: Number, default: 0 },
+    votes: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: 'User' },
+        rating: { type: Number, min: 0, max: 10 }
+      }
+    ],
+    flameCount: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0 },
     isBikeOfTheWeek: { type: Boolean, default: false },
     rideType: { type: String, required: true },
     isDeleted: { type: Boolean, default: false },

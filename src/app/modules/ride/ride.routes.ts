@@ -4,25 +4,33 @@ import { RideControllers } from './ride.controller';
 import { upload } from '../../middleware/multer';
 import validateRequest from '../../middleware/validateRequest';
 import { RideValidations } from './ride.validation';
+import { USER_ROLE } from '../Auth/auth.constant';
 
 const router = express.Router();
 
 router.post(
   '/upload',
-  auth('member', 'admin'),
+  auth(USER_ROLE.member, USER_ROLE.admin),
   upload.single('image'), 
   (req: Request, res: Response, next: NextFunction) => {
-    if (req.body.data) {
-      req.body = JSON.parse(req.body.data);
-    }
+    if (req.body.data) req.body = JSON.parse(req.body.data);
     next();
   },
   validateRequest(RideValidations.createRideValidationSchema),
   RideControllers.createRide
 );
 
-router.get('/', auth('member', 'admin', 'guest'), RideControllers.getAllRides);
-router.patch('/:id/heart', auth('member', 'admin'), RideControllers.toggleHeart);
-router.get('/leaderboard', auth('member', 'admin', 'guest'), RideControllers.getLeaderboard);
-router.patch('/:id/set-winner', auth('admin', 'superAdmin'), RideControllers.makeBikeOfWeek);
+router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), RideControllers.getAllRides);
+
+router.patch(
+  '/:id/vote', 
+  auth(USER_ROLE.member, USER_ROLE.admin), 
+  validateRequest(RideValidations.voteRideValidationSchema),
+  RideControllers.submitVote
+);
+
+router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), RideControllers.getLeaderboard);
+
+router.patch('/:id/set-winner', auth(USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.makeBikeOfWeek);
+
 export const RideRoutes = router;

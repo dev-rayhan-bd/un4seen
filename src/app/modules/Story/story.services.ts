@@ -2,6 +2,8 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { Story } from './story.model';
 import axios from 'axios';
+import { SavedStory } from './savedStory.model';
+import moment from 'moment';
 
 
 const generateAIMusic = async (mood: string) => {
@@ -42,7 +44,6 @@ const createStoryInDB = async (userId: string, payload: any) => {
 };
 
 
-
 const toggleHeartInDB = async (userId: string, storyId: string) => {
   const story = await Story.findById(storyId);
   if (!story) throw new AppError(httpStatus.NOT_FOUND, 'Story not found');
@@ -54,8 +55,9 @@ const toggleHeartInDB = async (userId: string, storyId: string) => {
     return await Story.findByIdAndUpdate(storyId, { $addToSet: { hearts: userId }, $inc: { heartCount: 1 } }, { new: true });
   }
 };
-import { SavedStory } from './savedStory.model';
-import moment from 'moment';
+
+
+
 
 
 const toggleSaveStoryInDB = async (userId: string, storyId: string) => {

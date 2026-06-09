@@ -8,10 +8,7 @@ import AppError from '../../errors/AppError';
 
 const createRide = catchAsync(async (req: Request, res: Response) => {
   const { userId } = req.user;
-  
-
   const rideData = req.body; 
-
 
   if (req.file) {
     const imageUrl = await uploadImage(req); 
@@ -20,11 +17,7 @@ const createRide = catchAsync(async (req: Request, res: Response) => {
     throw new AppError(httpStatus.BAD_REQUEST, "Bike image is required");
   }
 
-
-  const result = await RideServices.createRideInDB({
-    ...rideData,
-    user: userId,
-  });
+  const result = await RideServices.createRideInDB({ ...rideData, user: userId });
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -35,7 +28,7 @@ const createRide = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllRides = catchAsync(async (req: Request, res: Response) => {
-  const result = await RideServices.getAllRidesFromDB(req.query);
+  const result = await RideServices.getAllRidesFromDB(req.query, req.user?.userId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -44,14 +37,16 @@ const getAllRides = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const toggleHeart = catchAsync(async (req: Request, res: Response) => {
+const submitVote = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await RideServices.toggleHeartInDB(req.user.userId, id as string);
+  const { rating } = req.body;
+  const result = await RideServices.voteRideInDB(req.user.userId, id as string, rating);
+  
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: result.isHearted ? 'Heart added' : 'Heart removed',
-    data: result,
+    message: 'Rating submitted',
+    data: { averageRating: result.averageRating, flameCount: result.flameCount },
   });
 });
 
@@ -60,17 +55,19 @@ const getLeaderboard = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Weekly leaderboard retrieved',
+    message: 'Leaderboard retrieved',
     data: result,
   });
 });
+
 const makeBikeOfWeek = catchAsync(async (req, res) => {
   const result = await RideServices.setBikeOfTheWeekInDB(req.params.id as string);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Bike of the Week selected and winner rewarded!',
+    message: 'Winner declared and points rewarded!',
     data: result,
   });
 });
-export const RideControllers = { createRide, getAllRides, toggleHeart, getLeaderboard, makeBikeOfWeek};
+
+export const RideControllers = { createRide, getAllRides, submitVote, getLeaderboard, makeBikeOfWeek };
