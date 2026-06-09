@@ -17,6 +17,7 @@ import { MilestoneRoutes } from '../modules/Milestone/milestone.routes';
 import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communityMilestone.routes';
 import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 import { StoryRoutes } from '../modules/Story/story.routes';
+import { BikeRoutes } from '../modules/Bike/bike.routes';
 
 
 
@@ -91,6 +92,10 @@ const moduleRoutes = [
   {
     path: '/stories',
     route: StoryRoutes,
+  },
+  {
+    path: '/bikes',
+    route: BikeRoutes,
   }
 ];
 
