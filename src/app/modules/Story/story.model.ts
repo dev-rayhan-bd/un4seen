@@ -11,7 +11,7 @@ const storySchema = new Schema<TStory>(
     category: { 
       type: String, 
       enum: ['Bikes', 'Orders', 'Installs', 'Winners', 'Behind Scenes'], 
-      required: true 
+      // required: true 
     },
     hearts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     heartCount: { type: Number, default: 0 },
