@@ -20,6 +20,7 @@ import { StoryRoutes } from '../modules/Story/story.routes';
 import { BikeRoutes } from '../modules/Bike/bike.routes';
 import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
+import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
 
 
 
@@ -106,7 +107,11 @@ const moduleRoutes = [
   {
     path: '/ideas',
     route: IdeaRoutes,
-  }
+  },
+  {
+    path: '/crew-choices',
+    route: CrewChoiceRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
