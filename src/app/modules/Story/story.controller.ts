@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import uploadImage from '../../middleware/upload';
 import { StoryServices } from './story.services';
+import { getIO } from '../../utils/socket';
 
 const createStory = catchAsync(async (req: Request, res: Response) => {
   const data = req.body; 
@@ -13,7 +14,8 @@ const createStory = catchAsync(async (req: Request, res: Response) => {
   }
 
   const result = await StoryServices.createStoryInDB(req.user.userId, data);
-
+  const io = getIO();
+  io.emit('NEW_STORY', result)
   sendResponse(res, {
     statusCode: 201,
     success: true,

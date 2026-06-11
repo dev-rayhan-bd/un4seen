@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import config from './app/config';
 import seedAdmin from './app/DB';
 import 'dotenv/config';
+import { initializeSocket } from './app/utils/socket';
 
 
 
@@ -21,7 +22,7 @@ async function main() {
       console.log(`app is listening on port ${config.port}`);
     });
 
-    // initializeSocket(server);
+   initializeSocket(server); 
   } catch (err) {
     console.log(err);
   }
