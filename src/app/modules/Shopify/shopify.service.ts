@@ -1,7 +1,8 @@
 import axios from 'axios';
 import config from '../../config';
 import { ShopifyToken } from './shopify.model';
-
+import AppError from '../../errors/AppError';
+import httpStatus from 'http-status'
 const SHOPIFY_URL = `https://un4seen.myshopify.com/admin/api/2024-04`;
 
 
@@ -83,3 +84,93 @@ export const createShopifyDiscountCode = async (amount: number) => {
 
   return discountResponse.data.discount_code.code;
 };
+
+
+const SHOPIFY_DOMAIN = process.env.SHOPIFY_STORE_NAME 
+const API_VERSION = "2024-04";
+
+let productCache: any[] = [];
+let lastCacheTime = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 mn chache
+
+export const getShopifyProductsFromDB = async (query: Record<string, unknown>) => {
+  try {
+    const accessToken = await getValidShopifyToken();
+    const baseUrl = `https://${SHOPIFY_DOMAIN}.myshopify.com/admin/api/${API_VERSION}`;
+
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const vendor = (query.brand as string) || '';
+
+    const currentTime = Date.now();
+
+
+    if (productCache.length === 0 || (currentTime - lastCacheTime) > CACHE_DURATION) {
+      console.log("🚀 Cache empty/expired. Fetching first 250 products...");
+
+
+      const response = await axios.get(`${baseUrl}/products.json?limit=250`, {
+        headers: { 'X-Shopify-Access-Token': accessToken },
+        timeout: 10000 
+      });
+
+      productCache = response.data.products;
+      lastCacheTime = currentTime;
+    }
+
+
+    let filteredProducts = productCache;
+    if (vendor) {
+      filteredProducts = productCache.filter(
+        (p: any) => p.vendor.toLowerCase() === vendor.toLowerCase()
+      );
+    }
+
+
+    const total = filteredProducts.length;
+    const skip = (page - 1) * limit;
+    const paginated = filteredProducts.slice(skip, skip + limit);
+
+
+    const result = paginated.map((p: any) => {
+      const variant = p.variants[0];
+      const price = parseFloat(variant.price);
+      const comparePrice = variant.compare_at_price ? parseFloat(variant.compare_at_price) : null;
+      let discount = null;
+      if (comparePrice && comparePrice > price) {
+        discount = Math.round(((comparePrice - price) / comparePrice) * 100);
+      }
+
+      return {
+        id: p.id,
+        title: p.title,
+        handle: p.handle,
+        price: price.toFixed(2),
+        compareAtPrice: comparePrice ? comparePrice.toFixed(2) : null,
+        discountPercentage: discount ? `-${discount}%` : null,
+        image: p.image?.src || "",
+        brand: p.vendor,
+        category: p.product_type,
+        productUrl: `https://un4seendecals.com/products/${p.handle}?discount=SYNDICATE`
+      };
+    });
+
+
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit)
+      },
+      result
+    };
+
+  } catch (error: any) {
+    console.error("❌ Shopify Error:", error.message);
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Shopify products could not be loaded. Please try again.");
+  }
+};
+
+
+

@@ -11,5 +11,9 @@ router.post(
   auth(USER_ROLE.superAdmin, USER_ROLE.admin), 
   ShopifyControllers.generateAdminToken
 );
-
+router.get(
+  '/store-feed', 
+  auth('member', 'admin', 'guest'), 
+  ShopifyControllers.getStoreProducts
+);
 export const ShopifyRoutes = router;

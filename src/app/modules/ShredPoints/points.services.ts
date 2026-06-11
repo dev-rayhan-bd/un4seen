@@ -72,14 +72,14 @@ const redeemPoints = async (userId: string) => {
     user: userId,
     points: -POINT_VALUES.REDEEM_THRESHOLD,
     source: 'redeem',
-    description: `Redeemed for $${POINT_VALUES.REDEEM_VALUE_USD} Shopify credit`,
+    description: `Redeemed for ${POINT_VALUES.REDEEM_VALUE_USD} nzd Shopify credit`,
     shopifyDiscountCode: discountCode,
   });
 
   await sendNotification(
     userId,
     'Reward Redeemed! 🎁',
-    `Your $${POINT_VALUES.REDEEM_VALUE_USD} code is ${discountCode}. Happy shopping!`,
+    `Your ${POINT_VALUES.REDEEM_VALUE_USD} nzd code is ${discountCode}. Happy shopping!`,
     'promo'
   );
 
@@ -429,6 +429,17 @@ const reviewSubmission = async (submissionId: string, status: 'approved' | 'reje
     return submission;
 };
 
+const getMyRedeemedCodesFromDB = async (userId: string) => {
+  const result = await PointTransaction.find({ 
+    user: userId, 
+    source: 'redeem'
+  })
+  .select('shopifyDiscountCode points createdAt description')
+  .sort({ createdAt: -1 });
+
+  return result;
+};
+
 export const PointServices = {
   addPoints,
   claimDailyPoints,
@@ -443,5 +454,6 @@ export const PointServices = {
     getReferralStats,
     submitSocialProof,
     getAllPendingSubmissions,
-    reviewSubmission
+    reviewSubmission,
+    getMyRedeemedCodesFromDB
 };

@@ -3,6 +3,8 @@ import axios from 'axios';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import { getShopifyProductsFromDB } from './shopify.service';
+
 
 
 const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
@@ -39,7 +41,18 @@ const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+const getStoreProducts = catchAsync(async (req, res) => {
+  const result = await getShopifyProductsFromDB(req.query);
 
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Products retrieved successfully',
+    data: result,
+  });
+});
 export const ShopifyControllers = {
   generateAdminToken,
+  getStoreProducts
+
 };

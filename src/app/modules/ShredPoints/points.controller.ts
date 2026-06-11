@@ -144,4 +144,18 @@ const getPendingSubmissions = catchAsync(async (req: Request, res: Response) => 
         data: result,
     });
 });
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats, submitProof, adminReview, getPendingSubmissions};
+
+
+
+const getMyRedeemedCodes = catchAsync(async (req, res) => {
+  const result = await PointServices.getMyRedeemedCodesFromDB(req.user.userId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Redeemed codes retrieved successfully',
+    data: result,
+  });
+});
+
+
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats, submitProof, adminReview, getPendingSubmissions,getMyRedeemedCodes};
