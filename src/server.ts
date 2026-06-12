@@ -1,47 +1,43 @@
-import { Server } from 'socket.io';
-import { Server as HttpServer } from 'http';
-import { verifyToken } from './app/modules/Auth/auth.utils';
+import { Server } from 'http';
+
+import app from './app';
+
+import mongoose from 'mongoose';
 import config from './app/config';
+import seedAdmin from './app/DB';
+import 'dotenv/config';
+import { initializeSocket } from './app/utils/socket';
 
 
 
-let io: Server;
+let server: Server;
 
-export const initializeSocket = (server: HttpServer) => {
-  io = new Server(server, {
-    cors: { origin: "*" },
-  });
-
-  io.use((socket, next) => {
-    //  ws://url?token=YOUR_TOKEN
-    const token = socket.handshake.query.token as string;
-
-    if (!token) {
-      return next(new Error('Authentication error: Token missing'));
-    }
-
-    try {
-      const decoded = verifyToken(token, config.jwt_access_secret as string);
-
-      socket.data.user = decoded; 
-      next();
-    } catch (err) {
-      next(new Error('Authentication error: Invalid token'));
-    }
-  });
-
-  io.on('connection', (socket) => {
-    console.log('✅ User Authenticated & Connected:', socket.data.user.userId);
-
-    socket.on('disconnect', () => {
-      console.log('❌ User disconnected');
+async function main() {
+  try {
+    await mongoose.connect(config.database_url as string);
+ await seedAdmin(); 
+    server = app.listen(config.port, () => {
+      console.log(`app is listening on port ${config.port}`);
     });
-  });
 
-  return io;
-};
+    initializeSocket(server);
+  } catch (err) {
+    console.log(err);
+  }
+}
+main();
 
-export const getIO = () => {
-  if (!io) throw new Error('Socket.io not initialized!');
-  return io;
-};
+process.on('unhandledRejection', (err) => {
+  console.log(`😈 unahandledRejection is detected , shutting down ...`, err);
+  if (server) {
+    server.close(() => {
+      process.exit(1);
+    });
+  }
+  process.exit(1);
+});
+
+process.on('uncaughtException', () => {
+  console.log(`😈 uncaughtException is detected , shutting down ...`);
+  process.exit(1);
+});

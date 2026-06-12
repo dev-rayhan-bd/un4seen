@@ -13,7 +13,10 @@ const createStoryInDB = async (userId: string, payload: any) => {
     ...payload,
     user: userId,
   });
-  return result;
+  const populatedStory = await Story.findById(result._id)
+    .populate('user', 'firstName lastName image memberNumber')
+    .populate('music', 'title audioUrl category');
+  return populatedStory;
 };
 
 const getAllStoriesFromDB = async (currentUserId: string, userRole: string) => {
