@@ -21,6 +21,7 @@ import { BikeRoutes } from '../modules/Bike/bike.routes';
 import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
 import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
+import { ChannelRoutes } from '../modules/Channel/channel.routes';
 
 
 
@@ -111,6 +112,10 @@ const moduleRoutes = [
   {
     path: '/crew-choices',
     route: CrewChoiceRoutes,
+  },
+  {
+    path: '/channels',
+    route: ChannelRoutes,
   },
 ];
 

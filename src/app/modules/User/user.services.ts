@@ -8,6 +8,7 @@ import { Giveaway } from '../Giveway/giveaway.model';
 import { Ride } from '../ride/ride.model';
 import { PointTransaction } from '../ShredPoints/points.model';
 import { Story } from '../Story/story.model';
+import { Bike } from '../Bike/bike.model';
 const getMyProfileFromDB = async (userId: string) => {
   const result = await UserModel.findById(userId);
   return result;
@@ -99,29 +100,69 @@ const unfollowUserInDB = async (followerId: string, targetId: string) => {
   return { message: "Successfully unfollowed" };
 };
 
-const getSingleUserFromDB = async (targetId: string, currentUserId: string) => {
+// const getSingleUserFromDB = async (targetId: string, currentUserId: string) => {
+//   const user = await UserModel.findById(targetId).select('-password');
+//   if (!user) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+//   }
+
+
+//   const isFollowing = user.followers.some(
+//     (id) => id.toString() === currentUserId.toString()
+//   );
+
+//   return {
+//     ...user.toObject(),
+//     isFollowing, 
+//   };
+// };
+const getCompleteProfileData = async (targetId: string, viewerId: string) => {
+
   const user = await UserModel.findById(targetId).select('-password');
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
+  if (!user) throw new AppError(404, 'User not found');
+
+  const userObj = user.toObject();
 
 
-  const isFollowing = user.followers.some(
-    (id) => id.toString() === currentUserId.toString()
-  );
+  const activeBike = await Bike.findOne({ user: targetId, isRetired: false })
+    .select('_id image make model year');
+
+  const joinDate = moment(userObj.createdAt);
+  const now = moment();
+  const durationYears = now.diff(joinDate, 'years', true).toFixed(1);
+  const durationMonths = now.diff(joinDate, 'months');
+
+  const milestones = {
+    is3moReached: durationMonths >= 3,
+    is6moReached: durationMonths >= 6,
+    is1yrReached: durationMonths >= 12,
+    is2yrReached: durationMonths >= 24,
+    is3yrReached: durationMonths >= 36,
+    is4yrReached: durationMonths >= 48,
+    is5yrReached: durationMonths >= 60,
+  };
+
+  const isFollowing = user.followers ? user.followers.some(
+    (id: any) => id.toString() === viewerId.toString()
+  ) : false;
 
   return {
-    ...user.toObject(),
-    isFollowing, 
+    ...userObj,
+    activeBike: activeBike || null, 
+    journey: {
+      memberSince: joinDate.format('MMMM YYYY'),
+      totalDuration: `${durationYears} years`,
+      milestones
+    },
+    isFollowing,
   };
 };
-
 
 
 const getFollowersListFromDB = async (userId: string, query: Record<string, unknown>) => {
 
   const followerQuery = new QueryBuilder(
-    UserModel.find({ following: userId }).select('firstName lastName image memberNumber status'),
+    UserModel.find({ following: userId }),
     query
   )
     .filter()
@@ -139,7 +180,7 @@ const getFollowersListFromDB = async (userId: string, query: Record<string, unkn
 const getFollowingListFromDB = async (userId: string, query: Record<string, unknown>) => {
 
   const followingQuery = new QueryBuilder(
-    UserModel.find({ followers: userId }).select('firstName lastName image memberNumber status'),
+    UserModel.find({ followers: userId }),
     query
   )
     .filter()
@@ -237,7 +278,7 @@ export const UserServices = {
   updateProfileInDB,
   followUserInDB,
   unfollowUserInDB,
-  getSingleUserFromDB,
+getCompleteProfileData,
   getFollowersListFromDB,
   getFollowingListFromDB,
   getHomePageDataFromDB

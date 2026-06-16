@@ -6,11 +6,25 @@ import { Request, Response } from 'express';
 import uploadImage from '../../middleware/upload';
 
 const getMyProfile = catchAsync(async (req, res) => {
-  const { userId } = req.user;
-  const result = await UserServices.getMyProfileFromDB(userId);
+  const userId = req.user.userId;
+  const result = await UserServices.getCompleteProfileData(userId as string, userId as string);
 
   sendResponse(res, {
-    statusCode: httpStatus.OK,
+    statusCode: 200,
+    success: true,
+    message: 'My profile retrieved successfully',
+    data: result,
+  });
+});
+
+
+const getSingleUser = catchAsync(async (req, res) => {
+  const targetId = req.params.id;
+  const viewerId = req.user.userId;
+  const result = await UserServices.getCompleteProfileData(targetId as string, viewerId as string);
+
+  sendResponse(res, {
+    statusCode: 200,
     success: true,
     message: 'User profile retrieved successfully',
     data: result,
@@ -27,7 +41,7 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
     payload.image = imageUrl;
   }
 
-  const result = await UserServices.updateProfileInDB(userId, payload);
+  const result = await UserServices.updateProfileInDB(userId as string, payload);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -65,19 +79,7 @@ const unfollowUser = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
-const getSingleUser = catchAsync(async (req: Request, res: Response) => {
-  const { id: targetId } = req.params;
-  const { userId: currentUserId } = req.user;
 
-  const result = await UserServices.getSingleUserFromDB(targetId as string, currentUserId);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User profile retrieved successfully',
-    data: result,
-  });
-});
 const getFollowersList = catchAsync(async (req: Request, res: Response) => {
   const { id: userId } = req.params;
   const result = await UserServices.getFollowersListFromDB(userId as string, req.query);

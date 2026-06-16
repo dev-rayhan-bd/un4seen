@@ -55,6 +55,8 @@ lastBirthdayRewardYear?: number;
    isOtpVerified: boolean;
   verificationExpire?: Date;
   lastDailyClaimDate?: string | null; // ISO date string or null
+  createdAt: Date;
+  updatedAt: Date
 };
 
 export interface UserModelStatic extends Model<TUser> {

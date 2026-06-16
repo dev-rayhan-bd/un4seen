@@ -32,7 +32,7 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '10kb' })); // bosy size limnit 10kb, to prevent DoS attacks
 
 // Now apply JSON parser for all other routes
-app.use(express.json());
+// app.use(express.json());
 app.use(cookieParser());
 app.set('trust proxy', 1);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -45,10 +45,6 @@ app.use(
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000',
-      'https://el-afrik.vercel.app',
-      'http://15.223.245.199',
-      'http://15.223.245.199:3000',
-      'https://dashboard.el-afriklounge.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
