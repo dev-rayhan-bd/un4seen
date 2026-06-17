@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin';
-import { NotificationModel } from '../modules/Notification/notification.model';
+
 import { UserModel } from '../modules/User/user.model';
 import config from '../config';
+import { NotificationModel } from '../modules/PrivacyPolicy/Notification/notification.model';
 
 // Firebase Initialize
 const serviceAccount = require('../../../firebase-admin-config.json');

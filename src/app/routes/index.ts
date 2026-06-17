@@ -22,6 +22,7 @@ import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
 import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
 import { ChannelRoutes } from '../modules/Channel/channel.routes';
+import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notification.routes';
 
 
 
@@ -116,6 +117,10 @@ const moduleRoutes = [
   {
     path: '/channels',
     route: ChannelRoutes,
+  },
+  {
+    path: '/notification',
+    route: NotificationRoutes,
   },
 ];
 
