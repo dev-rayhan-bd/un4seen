@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 export type TChannel = {
   name?: string;
+   description?: string;
   type: 'group' | 'private';
   image?: string;
   creator?: Types.ObjectId;
@@ -9,10 +10,15 @@ export type TChannel = {
   admins: Types.ObjectId[];
   lastMessage?: Types.ObjectId;
   isDeleted: boolean;
+    isPrivate: boolean;
   createdAt:Date;
   updatedAt:Date;
 };
-
+export type TJoinRequest = {
+  user: Types.ObjectId;
+  channel: Types.ObjectId;
+  status: 'pending' | 'accepted' | 'rejected';
+};
 export type TMessage = {
   channel: Types.ObjectId;
   sender: Types.ObjectId;

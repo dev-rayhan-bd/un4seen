@@ -51,6 +51,7 @@ const userSchema = new Schema<TUser, UserModelStatic>({
     isProfileComplete: { type: Boolean, default: false },
     verificationCode: { type: String, select: false },
     isOtpVerified: { type: Boolean, default: false },
+    isOnline: { type: Boolean, default: false },
     verificationExpire: { type: Date, select: false },
 
     lastDailyClaimDate: { 

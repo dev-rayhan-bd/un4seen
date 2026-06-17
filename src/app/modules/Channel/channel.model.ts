@@ -5,6 +5,7 @@ const channelSchema = new Schema<TChannel>({
   name: { type: String, trim: true },
   type: { type: String, enum: ['group', 'private'], required: true },
   image: { type: String },
+    description: { type: String },
   creator: { type: Schema.Types.ObjectId, ref: 'User' },
   members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],

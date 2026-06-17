@@ -2,6 +2,10 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { Channel, Message, MessageReport } from './channel.model';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { JoinRequest } from './joinRequest.model';
+import { sendNotification } from '../../utils/sendNotification';
+import { Types } from 'mongoose';
+import { UserModel } from '../User/user.model';
 
 const getOrCreatePrivateChatInDB = async (userId: string, targetId: string) => {
   if (userId === targetId) throw new AppError(400, "You cannot chat with yourself");
@@ -20,13 +24,27 @@ const getOrCreatePrivateChatInDB = async (userId: string, targetId: string) => {
 };
 
 const createGroupInDB = async (userId: string, payload: any) => {
-  return await Channel.create({
-    ...payload,
+
+  const memberList = [new Types.ObjectId(userId)]; 
+  
+  if (payload.members && Array.isArray(payload.members)) {
+    payload.members.forEach((id: string) => {
+      memberList.push(new Types.ObjectId(id));
+    });
+  }
+
+
+  const result = await Channel.create({
+    name: payload.name,
+    description: payload.description,
+    isPrivate: payload.isPrivate,
     type: 'group',
     creator: userId,
-    admins: [userId],
-    members: [userId, ...payload.members]
+    admins: [new Types.ObjectId(userId)],
+    members: memberList,
   });
+
+  return result;
 };
 
 const getMyChatListFromDB = async (userId: string) => {
@@ -66,39 +84,28 @@ const reportMessageInDB = async (userId: string, payload: any) => {
   await Message.findByIdAndUpdate(payload.message, { isReported: true });
   return result;
 };
+
 const createMessageInDB = async (payload: any) => {
-  let { channel, sender, text, file, to } = payload;
+  let { channel, sender, text, file, to, type } = payload;
 
 
-  if (!channel && to) {
-
+  if (type === 'private' && !channel && to) {
     let chat = await Channel.findOne({
       type: 'private',
       members: { $all: [sender, to] }
     });
 
-   
     if (!chat) {
-      chat = await Channel.create({
-        type: 'private',
-        members: [sender, to]
-      });
+      chat = await Channel.create({ type: 'private', members: [sender, to] });
     }
     channel = chat._id;
   }
 
-  const newMessage = await Message.create({
-    channel, 
-    sender,
-    text,
-    file
-  });
-
+  const newMessage = await Message.create({ channel, sender, text, file });
   await Channel.findByIdAndUpdate(channel, { lastMessage: newMessage._id });
 
   return await newMessage.populate('sender', 'firstName lastName image memberNumber');
 };
-
 
 const getMessagesFromDB = async (channelId: string, query: Record<string, unknown>) => {
   const messageQuery = new QueryBuilder(
@@ -115,11 +122,153 @@ const getMessagesFromDB = async (channelId: string, query: Record<string, unknow
   return { meta, result };
 };
 
+const getMyJoinedChannelsFromDB = async (userId: string) => {
+  const allChannels = await Channel.find({ 
+    members: userId, 
+    isDeleted: false 
+  }).populate('members', 'firstName lastName image isOnline memberNumber');
+
+  const groups: any[] = [];
+  const directMessages: any[] = [];
+
+  allChannels.forEach(channel => {
+    const channelObj = channel.toObject() as any;
+    
+
+    const onlineCount = channel.members.filter((m: any) => m.isOnline === true).length;
+
+    if (channel.type === 'group') {
+      groups.push({
+        _id: channelObj._id,
+        name: channelObj.name,
+        image: channelObj.image,
+        onlineCount,
+        isPrivate: channelObj.isPrivate
+      });
+    } else {
+      const otherUser = channelObj.members.find((m: any) => m._id.toString() !== userId);
+      if (otherUser) {
+        directMessages.push({
+          _id: channelObj._id,
+          userId: otherUser._id,
+          name: `${otherUser.firstName} ${otherUser.lastName}`,
+          image: otherUser.image,
+          isOnline: otherUser.isOnline, 
+          type: 'private'
+        });
+      }
+    }
+  });
+
+  return { groups, directMessages };
+};
+
+const searchAllChannelsFromDB = async (userId: string, searchTerm: string) => {
+  const channels = await Channel.find({
+    name: { $regex: searchTerm, $options: 'i' },
+    type: 'group',
+    isDeleted: false
+  }).populate('members', 'status');
+
+
+  const pendingRequests = await JoinRequest.find({ user: userId, status: 'pending' }).distinct('channel');
+
+  return channels.map(channel => {
+    const isJoined = channel.members.some(m => m._id.toString() === userId);
+    const isPending = pendingRequests.some(reqId => reqId.toString() === channel._id.toString());
+    const onlineCount = channel.members.filter((m: any) => m.status === 'active').length;
+
+    return {
+      _id: channel._id,
+      name: channel.name,
+      image: channel.image,
+      onlineCount,
+      isJoined, 
+      isPending,
+      isPrivate: channel.isPrivate
+    };
+  });
+};
+
+
+const sendJoinRequestInDB = async (userId: string, channelId: string) => {
+
+    const channel = await Channel.findById(channelId);
+    if (channel?.members.includes(userId as any)) throw new AppError(400, "Already a member");
+
+    return await JoinRequest.create({ user: userId, channel: channelId });
+};
+const getChannelRequestsFromDB = async (adminId: string, channelId: string) => {
+  const channel = await Channel.findOne({ _id: channelId, admins: adminId });
+  if (!channel) throw new AppError(403, "You are not an admin of this channel");
+
+  return await JoinRequest.find({ channel: channelId, status: 'pending' })
+    .populate('user', 'firstName lastName image memberNumber');
+};
+
+const handleJoinRequestInDB = async (adminId: string, requestId: string, status: 'accepted' | 'rejected') => {
+  const request = await JoinRequest.findById(requestId).populate('channel');
+  if (!request) throw new AppError(404, "Request not found");
+
+  const channel = await Channel.findById(request.channel);
+
+  if (!channel?.admins.includes(adminId as any)) {
+    throw new AppError(403, "Only channel admins can perform this action");
+  }
+
+  request.status = status;
+  await request.save();
+
+  if (status === 'accepted') {
+
+    await Channel.findByIdAndUpdate(channel._id, {
+      $addToSet: { members: request.user }
+    });
+
+    await sendNotification(
+      request.user.toString(),
+      'Join Request Accepted! 🎉',
+      `You are now a member of ${channel.name}. Happy chatting!`,
+      'general'
+    );
+  }
+
+  return request;
+};
+const searchRidersFromDB = async (searchTerm: string, currentUserId: string) => {
+  console.log("Searching for:", searchTerm);
+
+  const query: any = {
+    _id: { $ne: currentUserId },
+
+    isDeleted: { $ne: true } 
+  };
+
+  if (searchTerm) {
+    const cleanSearch = searchTerm.trim().replace('#', '');
+    query.$or = [
+      { firstName: { $regex: cleanSearch, $options: 'i' } },
+      { lastName: { $regex: cleanSearch, $options: 'i' } },
+      { fullName: { $regex: cleanSearch, $options: 'i' } },
+      { memberNumber: { $regex: cleanSearch, $options: 'i' } }
+    ];
+  }
+
+  const users = await UserModel.find(query)
+    .select('firstName lastName fullName image status memberNumber')
+    .limit(20);
+
+  return users;
+};
 export const ChannelServices = { 
   getOrCreatePrivateChatInDB, 
   createGroupInDB, 
   getMyChatListFromDB, 
   getMessagesFromDB,
   reportMessageInDB ,
-  createMessageInDB
+  createMessageInDB,
+  searchAllChannelsFromDB,
+  sendJoinRequestInDB,getMyJoinedChannelsFromDB,
+  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB
+
 };

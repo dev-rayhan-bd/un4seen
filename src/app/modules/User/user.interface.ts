@@ -53,6 +53,7 @@ lastBirthdayRewardYear?: number;
   isProfileComplete: boolean;
   verificationCode?: string;
    isOtpVerified: boolean;
+   isOnline?:boolean;
   verificationExpire?: Date;
   lastDailyClaimDate?: string | null; // ISO date string or null
   createdAt: Date;

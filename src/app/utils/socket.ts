@@ -2,87 +2,89 @@ import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { verifyToken } from '../modules/Auth/auth.utils';
 import config from '../config';
-import { ChannelServices } from '../modules/Channel/channel.services'; 
+import { ChannelServices } from '../modules/Channel/channel.services';
+import { UserModel } from '../modules/User/user.model';
 
 let io: Server;
+const onlineUsers = new Set<string>(); 
 
 export const initializeSocket = (server: HttpServer) => {
-  io = new Server(server, {
-    cors: { origin: "*" },
-  });
+  io = new Server(server, { cors: { origin: "*" } });
+
 
   io.use((socket, next) => {
     const token = socket.handshake.query.token as string;
-    if (!token) return next(new Error('Authentication error: Token missing'));
-
+    if (!token) return next(new Error('Auth error: Token missing'));
     try {
       const decoded = verifyToken(token, config.jwt_access_secret as string);
       socket.data.user = decoded; 
       next();
     } catch (err) {
-      next(new Error('Authentication error: Invalid token'));
+      next(new Error('Auth error: Invalid token'));
     }
   });
 
-  io.on('connection', (socket) => {
-    const userId = socket.data.user.userId;
-    console.log('✅ User Authenticated:', userId);
+  io.on('connection',async (socket) => {
+    const myId = socket.data.user.userId;
+    onlineUsers.add(myId);
+    socket.join(myId);
 
-    socket.join(userId);
 
+ 
+  await UserModel.findByIdAndUpdate(myId, { isOnline: true });
+
+    socket.emit('GET_ONLINE_USERS', Array.from(onlineUsers)); 
+    socket.broadcast.emit('USER_STATUS_CHANGED', { userId: myId,isOnline: true }); 
+
+    console.log(`✅ User ${myId} connected`);
+
+
+    socket.on('SEND_PRIVATE_MESSAGE', async (data: { to: string; text: string; file?: string }) => {
+      try {
+        const { to, text, file } = data;
+        const populatedMsg = await ChannelServices.createMessageInDB({
+          sender: myId, to, text, file, type: 'private'
+        } as any);
+
+ 
+        io.to(to).emit('RECEIVE_PRIVATE_MESSAGE', populatedMsg);
+        socket.emit('RECEIVE_PRIVATE_MESSAGE', populatedMsg);
+      } catch (error: any) {
+        socket.emit('ERROR', { message: error.message });
+      }
+    });
 
     socket.on('JOIN_CHANNEL', (channelId: string) => {
       socket.join(channelId);
-      console.log(`User joined channel room: ${channelId}`);
+      console.log(`👥 Joined Group: ${channelId}`);
     });
 
-    // (Text + Attachment Support) ---
-  socket.on('SEND_PRIVATE_MESSAGE', async (data: { to: string; text: string; file?: string }) => {
-  try {
-    const { to, text, file } = data;
-    const myId = socket.data.user.userId;
-
-    console.log(`📩 Message from ${myId} to ${to}`);
-
-    const populatedMsg = await ChannelServices.createMessageInDB({
-      sender: myId,
-      to: to,
-      text: text,
-      file: file,
-      type: 'private'
-    } as any);
-
-    console.log("✅ Message saved in DB");
-
-    io.to(to).emit('RECEIVE_MESSAGE', populatedMsg);
-    
-    socket.emit('RECEIVE_MESSAGE', populatedMsg);
-    
-    console.log("🚀 Message Emitted Successfully");
-
-  } catch (error: any) {
-    console.error("❌ SOCKET ERROR:", error.message);
-    socket.emit('ERROR', { message: "Failed to send message", detail: error.message });
-  }
-});
+    socket.on('SEND_GROUP_MESSAGE', async (data: { channelId: string; text: string; file?: string }) => {
+      try {
+        const { channelId, text, file } = data;
+        const populatedMsg = await ChannelServices.createMessageInDB({
+          channel: channelId, sender: myId, text, file, type: 'group'
+        } as any);
 
 
-    socket.on('TYPING', (data: { channel: string; userName: string }) => {
-      socket.to(data.channel).emit('USER_TYPING', { 
-        channel: data.channel, 
-        user: data.userName 
-      });
+        io.to(channelId).emit('RECEIVE_GROUP_MESSAGE', populatedMsg);
+      } catch (error: any) {
+        socket.emit('ERROR', { message: error.message });
+      }
     });
 
-    socket.on('STOP_TYPING', (channelId: string) => {
-      socket.to(channelId).emit('USER_STOP_TYPING', channelId);
+
+    socket.on('START_TYPING', (data: { targetId: string; isGroup: boolean }) => {
+      socket.to(data.targetId).emit('USER_TYPING', { userId: myId, isGroup: data.isGroup });
     });
 
-  
-    socket.broadcast.emit('USER_STATUS', { userId, status: 'online' });
+    socket.on('STOP_TYPING', (targetId: string) => {
+      socket.to(targetId).emit('USER_STOP_TYPING', { userId: myId });
+    });
 
     socket.on('disconnect', () => {
-      socket.broadcast.emit('USER_STATUS', { userId, status: 'offline' });
+      onlineUsers.delete(myId);
+      io.emit('USER_STATUS_CHANGED', { userId: myId, isOnline: false });
       console.log('❌ User disconnected');
     });
   });
@@ -90,7 +92,4 @@ export const initializeSocket = (server: HttpServer) => {
   return io;
 };
 
-export const getIO = () => {
-  if (!io) throw new Error('Socket.io not initialized!');
-  return io;
-};
+export const getIO = () => io;

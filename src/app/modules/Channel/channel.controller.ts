@@ -45,11 +45,64 @@ const uploadAttachment = catchAsync(async (req: Request, res: Response) => {
     data: fileUrl,
   });
 });
+const searchChannels = catchAsync(async (req, res) => {
+  const result = await ChannelServices.searchAllChannelsFromDB(req.user.userId, req.query.searchTerm as string);
+  sendResponse(res, { statusCode: 200, success: true, message: 'Channels found', data: result });
+});
+
+const requestToJoin = catchAsync(async (req, res) => {
+  const result = await ChannelServices.sendJoinRequestInDB(req.user.userId, req.body.channelId);
+  sendResponse(res, { statusCode: 201, success: true, message: 'Join request sent to admin', data: result });
+});
+const getMyJoinedChannels = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+  const result = await ChannelServices.getMyJoinedChannelsFromDB(userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Joined channels retrieved successfully',
+    data: result,
+  });
+});
+const getJoinRequests = catchAsync(async (req, res) => {
+  const result = await ChannelServices.getChannelRequestsFromDB(req.user.userId as string, req.params.channelId as string);
+  sendResponse(res, { statusCode: 200, success: true, message: 'Pending requests retrieved', data: result });
+});
+
+const actionOnRequest = catchAsync(async (req, res) => {
+  const { requestId, status } = req.body;
+  const result = await ChannelServices.handleJoinRequestInDB(req.user.userId, requestId, status);
+  sendResponse(res, { statusCode: 200, success: true, message: `Request ${status} successfully`, data: result });
+});
+const searchRiders = catchAsync(async (req: Request, res: Response) => {
+
+  const { searchTerm } = req.query; 
+
+  const result = await ChannelServices.searchRidersFromDB(
+    searchTerm as string, 
+    req.user.userId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Riders retrieved successfully',
+    data: result,
+  });
+});
+
 export const ChannelControllers = { 
   startPrivateChat, 
   createGroup, 
   getMyChats, 
   getMessages,
   reportMessage ,
-  uploadAttachment
+  uploadAttachment,
+  searchChannels,
+  requestToJoin,
+  getMyJoinedChannels,
+  getJoinRequests,
+  actionOnRequest,searchRiders
+  
 };

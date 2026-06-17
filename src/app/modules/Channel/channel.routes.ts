@@ -12,8 +12,17 @@ const router = express.Router();
 router.get('/my-chats', auth(USER_ROLE.member, USER_ROLE.admin), ChannelControllers.getMyChats);
 
 router.post('/private', auth(USER_ROLE.member), validateRequest(ChannelValidations.startPrivateChatSchema), ChannelControllers.startPrivateChat);
-router.post('/group', auth(USER_ROLE.member, USER_ROLE.admin), validateRequest(ChannelValidations.createGroupSchema), ChannelControllers.createGroup);
-
+router.post('/create', auth(USER_ROLE.member, USER_ROLE.admin), validateRequest(ChannelValidations.createGroupSchema), ChannelControllers.createGroup);
+router.get('/sidebar', auth('member', 'admin'), ChannelControllers.getMyJoinedChannels);
+router.get('/search-all', auth('member', 'admin'), ChannelControllers.searchChannels);
+router.post('/request-join', auth('member'), ChannelControllers.requestToJoin);
+router.get('/requests/:channelId', auth('member', 'admin'), ChannelControllers.getJoinRequests);
+router.patch('/handle-request', auth('member', 'admin'), ChannelControllers.actionOnRequest);
+router.get(
+  '/search-riders', 
+  auth('member', 'admin', 'superAdmin'), 
+  ChannelControllers.searchRiders
+);
 router.get('/:id/messages', auth(USER_ROLE.member, USER_ROLE.admin), ChannelControllers.getMessages);
 
 router.post('/report', auth(USER_ROLE.member), validateRequest(ChannelValidations.reportMessageSchema), ChannelControllers.reportMessage);
