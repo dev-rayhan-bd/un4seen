@@ -263,7 +263,29 @@ const getHomePageDataFromDB = async (userId: string) => {
 
 
 
+const getAllUsersFromDB = async (query: Record<string, unknown>, currentUserId: string) => {
 
+  const userQuery = new QueryBuilder(
+    UserModel.find({ 
+      _id: { $ne: currentUserId }, 
+      isDeleted: { $ne: true } 
+    }), 
+    query
+  )
+    .search(['firstName', 'lastName', 'memberNumber', 'email'])
+    .filter() 
+    .sort() 
+    .paginate()
+    .fields();
+
+  const result = await userQuery.modelQuery;
+  const meta = await userQuery.countTotal();
+
+  return {
+    meta,
+    result,
+  };
+};
 
 
 
@@ -281,5 +303,6 @@ export const UserServices = {
 getCompleteProfileData,
   getFollowersListFromDB,
   getFollowingListFromDB,
-  getHomePageDataFromDB
+  getHomePageDataFromDB,
+  getAllUsersFromDB
 };

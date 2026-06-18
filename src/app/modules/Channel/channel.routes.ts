@@ -19,6 +19,11 @@ router.post('/request-join', auth('member'), ChannelControllers.requestToJoin);
 router.get('/requests/:channelId', auth('member', 'admin'), ChannelControllers.getJoinRequests);
 router.patch('/handle-request', auth('member', 'admin'), ChannelControllers.actionOnRequest);
 router.get(
+  '/private-history/:otherUserId', 
+  auth('member', 'admin'), 
+  ChannelControllers.getPrivateHistory
+);
+router.get(
   '/search-riders', 
   auth('member', 'admin', 'superAdmin'), 
   ChannelControllers.searchRiders
@@ -33,4 +38,5 @@ router.post(
   upload.single('file'), 
   ChannelControllers.uploadAttachment
 );
+router.get('/:id/members', auth('member', 'admin'), ChannelControllers.getChannelMembers);
 export const ChannelRoutes = router;

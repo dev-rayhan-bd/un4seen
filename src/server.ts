@@ -7,6 +7,7 @@ import config from './app/config';
 import seedAdmin from './app/DB';
 import 'dotenv/config';
 import { initializeSocket } from './app/utils/socket';
+import { UserModel } from './app/modules/User/user.model';
 
 
 
@@ -15,6 +16,7 @@ let server: Server;
 async function main() {
   try {
     await mongoose.connect(config.database_url as string);
+    await UserModel.updateMany({}, { isOnline: false });
  await seedAdmin(); 
     server = app.listen(config.port, () => {
       console.log(`app is listening on port ${config.port}`);

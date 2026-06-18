@@ -82,11 +82,21 @@ export const initializeSocket = (server: HttpServer) => {
       socket.to(targetId).emit('USER_STOP_TYPING', { userId: myId });
     });
 
-    socket.on('disconnect', () => {
-      onlineUsers.delete(myId);
-      io.emit('USER_STATUS_CHANGED', { userId: myId, isOnline: false });
-      console.log('❌ User disconnected');
-    });
+ socket.on('disconnect', async () => {
+  const userId = socket.data.user.userId;
+  console.log(`⏳ Attempting to set User Offline: ${userId}`);
+
+  try {
+
+    const result = await UserModel.findByIdAndUpdate(userId, { isOnline: false }, { new: true });
+    
+    io.emit('USER_STATUS_CHANGED', { userId, isOnline: false });
+    
+    console.log(`🔴 User ${userId} is now OFFLINE. DB Result:`, result?.isOnline);
+  } catch (error) {
+    console.error("❌ Disconnect DB Error:", error);
+  }
+});
   });
 
   return io;

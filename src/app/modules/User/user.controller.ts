@@ -17,6 +17,16 @@ const getMyProfile = catchAsync(async (req, res) => {
   });
 });
 
+const getAllMembers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserServices.getAllUsersFromDB(req.query, req.user.userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Members retrieved successfully',
+    data: result,
+  });
+});
 
 const getSingleUser = catchAsync(async (req, res) => {
   const targetId = req.params.id;
@@ -151,5 +161,6 @@ export const UserControllers = {
   getFollowingList,
   getMyFollowers,
   getMyFollowing,
-  getHomePageData
+  getHomePageData,
+  getAllMembers
 };

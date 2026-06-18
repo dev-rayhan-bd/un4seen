@@ -8,6 +8,11 @@ import { UserControllers } from './user.controller';
 const router = express.Router();
 
 router.get('/my-profile', auth(USER_ROLE.member, USER_ROLE.superAdmin, USER_ROLE.admin),UserControllers.getMyProfile);
+router.get(
+  '/all-members',
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  UserControllers.getAllMembers
+);
 router.patch(
   '/update-profile',
   auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),

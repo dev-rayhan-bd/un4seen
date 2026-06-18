@@ -108,12 +108,16 @@ const createMessageInDB = async (payload: any) => {
 };
 
 const getMessagesFromDB = async (channelId: string, query: Record<string, unknown>) => {
+
+  const channelObjectId = new Types.ObjectId(channelId);
+
   const messageQuery = new QueryBuilder(
-    Message.find({ channel: channelId, isDeleted: false }),
+
+    Message.find({ channel: channelObjectId, isDeleted: { $ne: true } }), 
     query
   )
-    .sort()     
-    .paginate()  
+    .sort() 
+    .paginate()
     .fields();
 
   const result = await messageQuery.modelQuery.populate('sender', 'firstName lastName image memberNumber');
@@ -260,6 +264,41 @@ const searchRidersFromDB = async (searchTerm: string, currentUserId: string) => 
 
   return users;
 };
+const getPrivateChatHistoryFromDB = async (userId: string, otherUserId: string, query: Record<string, unknown>) => {
+
+  const chat = await Channel.findOne({
+    type: 'private',
+    members: { $all: [userId, otherUserId] }
+  });
+
+  if (!chat) {
+    return {
+      meta: { page: 1, limit: 10, total: 0, totalPage: 0 },
+      result: []
+    };
+  }
+  return await ChannelServices.getMessagesFromDB(chat._id.toString(), query);
+};
+
+const getChannelMembersFromDB = async (channelId: string) => {
+  const channel = await Channel.findById(channelId).populate('members', 'firstName lastName image memberNumber isOnline status');
+
+  if (!channel) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Channel not found');
+  }
+
+
+  const membersWithAdminStatus = channel.members.map((member: any) => {
+    const memberObj = member.toObject();
+    return {
+      ...memberObj,
+      isAdmin: channel.admins.some((adminId) => adminId.toString() === member._id.toString()),
+    };
+  });
+
+  return membersWithAdminStatus;
+};
+
 export const ChannelServices = { 
   getOrCreatePrivateChatInDB, 
   createGroupInDB, 
@@ -269,6 +308,6 @@ export const ChannelServices = {
   createMessageInDB,
   searchAllChannelsFromDB,
   sendJoinRequestInDB,getMyJoinedChannelsFromDB,
-  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB
+  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB
 
 };

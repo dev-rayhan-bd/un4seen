@@ -91,7 +91,28 @@ const searchRiders = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getPrivateHistory = catchAsync(async (req: Request, res: Response) => {
+  const { otherUserId } = req.params;
+  const { userId } = req.user;
 
+  const result = await ChannelServices.getPrivateChatHistoryFromDB(userId, otherUserId as string, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Private chat history retrieved',
+    data: result,
+  });
+});
+const getChannelMembers = catchAsync(async (req, res) => {
+  const result = await ChannelServices.getChannelMembersFromDB(req.params.id as string);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Channel members retrieved successfully',
+    data: result,
+  });
+});
 export const ChannelControllers = { 
   startPrivateChat, 
   createGroup, 
@@ -103,6 +124,8 @@ export const ChannelControllers = {
   requestToJoin,
   getMyJoinedChannels,
   getJoinRequests,
-  actionOnRequest,searchRiders
+  actionOnRequest,searchRiders,
+  getPrivateHistory,
+  getChannelMembers
   
 };

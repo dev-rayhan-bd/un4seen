@@ -23,6 +23,7 @@ import { IdeaRoutes } from '../modules/Idea/idea.routes';
 import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
 import { ChannelRoutes } from '../modules/Channel/channel.routes';
 import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notification.routes';
+import { PostRoutes } from '../modules/Post/post.routes';
 
 
 
@@ -122,6 +123,10 @@ const moduleRoutes = [
     path: '/notification',
     route: NotificationRoutes,
   },
+  {
+    path: '/posts',
+    route: PostRoutes,
+  }
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
