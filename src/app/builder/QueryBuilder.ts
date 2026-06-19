@@ -9,37 +9,38 @@ class QueryBuilder<T> {
     this.query = query;
   }
 
-  search(searchableFields: string[]) {
-    const search = this?.query?.search as string;
-    if (search) {
-      this.modelQuery = this.modelQuery.find({
-        $or: searchableFields.map(
-          (field) =>
-            ({
-              [field]: { $regex: search, $options: 'i' },
-            } as any),
-        ),
-      });
-    }
-    return this;
-  }
-
-  filter() {
-    const queryObj = { ...this.query };
-    const excludeFields = ['search', 'sort', 'limit', 'page', 'fields'];
-    
-    excludeFields.forEach((el) => delete queryObj[el]);
-
-
-    Object.keys(queryObj).forEach(key => {
-        if (queryObj[key] === '' || queryObj[key] == null) {
-            delete queryObj[key];
-        }
+search(searchableFields: string[]) {
+ 
+  const search = (this?.query?.searchTerm || this?.query?.search) as string; 
+  
+  if (search) {
+    this.modelQuery = this.modelQuery.find({
+      $or: searchableFields.map(
+        (field) =>
+          ({
+            [field]: { $regex: search, $options: 'i' },
+          } as any),
+      ),
     });
-
-    this.modelQuery = this.modelQuery.find(queryObj as any);
-    return this;
   }
+  return this;
+}
+filter() {
+  const queryObj = { ...this.query };
+  
+  const excludeFields = ['searchTerm', 'search', 'sort', 'limit', 'page', 'fields'];
+  
+  excludeFields.forEach((el) => delete queryObj[el]);
+
+  Object.keys(queryObj).forEach(key => {
+      if (queryObj[key] === '' || queryObj[key] == null) {
+          delete queryObj[key];
+      }
+  });
+
+  this.modelQuery = this.modelQuery.find(queryObj as any);
+  return this;
+}
 
   sort() {
     const sort = (this?.query?.sort as string)?.split(',')?.join(' ') || '-createdAt';

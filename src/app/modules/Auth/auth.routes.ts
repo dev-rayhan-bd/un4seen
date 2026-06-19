@@ -15,7 +15,7 @@ router.post('/reset-password', AuthControllers.resetPassword);
 router.post('/resend-otp', AuthControllers.resendOTP);
 router.post('/refresh-token', AuthControllers.refreshToken);
 
-// Step 1: Auth শুরু করার route
+
 router.get('/shopify', (req, res) => {
   const shop = req.query.shop;
   const redirectUri = `https://un4seen-backend.vercel.app/api/v1/auth/shopify/callback`;
@@ -26,7 +26,7 @@ router.get('/shopify', (req, res) => {
   res.redirect(installUrl);
 });
 
-// Step 2: Callback route - token এখানে আসবে
+
 router.get('/shopify/callback', async (req, res) => {
   const { shop, code } = req.query;
   
@@ -41,8 +41,8 @@ router.get('/shopify/callback', async (req, res) => {
   });
   
   const data = await response.json();
-  console.log('ACCESS TOKEN:', data.access_token); // ← এখানে token দেখবে
+  console.log('ACCESS TOKEN:', data.access_token);
   
-  res.json({ access_token: data.access_token }); // browser এও দেখাবে
+  res.json({ access_token: data.access_token }); 
 })
 export const AuthRoutes = router;

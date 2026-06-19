@@ -31,7 +31,11 @@ router.get(
   auth(USER_ROLE.member, USER_ROLE.admin), 
   UserControllers.getMyFollowers
 );
-
+router.patch(
+  '/manage-status/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  UserControllers.updateUserStatus
+);
 router.get(
   '/my-following', 
   auth(USER_ROLE.member, USER_ROLE.admin), 

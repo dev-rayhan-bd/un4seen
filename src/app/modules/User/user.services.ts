@@ -262,17 +262,14 @@ const getHomePageDataFromDB = async (userId: string) => {
 
 
 
+// src/app/modules/User/user.services.ts
 
 const getAllUsersFromDB = async (query: Record<string, unknown>, currentUserId: string) => {
-
   const userQuery = new QueryBuilder(
-    UserModel.find({ 
-      _id: { $ne: currentUserId }, 
-      isDeleted: { $ne: true } 
-    }), 
+    UserModel.find({ _id: { $ne: currentUserId }, isDeleted: { $ne: true } }), 
     query
   )
-    .search(['firstName', 'lastName', 'memberNumber', 'email'])
+    .search(['firstName', 'lastName', 'memberNumber', 'email', 'fullName']) 
     .filter() 
     .sort() 
     .paginate()
@@ -281,14 +278,23 @@ const getAllUsersFromDB = async (query: Record<string, unknown>, currentUserId: 
   const result = await userQuery.modelQuery;
   const meta = await userQuery.countTotal();
 
-  return {
-    meta,
-    result,
-  };
+  return { meta, result };
 };
 
 
+const updateUserStatusInDB = async (id: string, status: string) => {
+  const user = await UserModel.findById(id);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
 
+  const result = await UserModel.findByIdAndUpdate(
+    id,
+    { status },
+    { new: true }
+  );
+  return result;
+};
 
 
 
@@ -304,5 +310,6 @@ getCompleteProfileData,
   getFollowersListFromDB,
   getFollowingListFromDB,
   getHomePageDataFromDB,
-  getAllUsersFromDB
+  getAllUsersFromDB,
+  updateUserStatusInDB
 };

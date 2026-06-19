@@ -45,9 +45,21 @@ const uploadAttachment = catchAsync(async (req: Request, res: Response) => {
     data: fileUrl,
   });
 });
-const searchChannels = catchAsync(async (req, res) => {
-  const result = await ChannelServices.searchAllChannelsFromDB(req.user.userId, req.query.searchTerm as string);
-  sendResponse(res, { statusCode: 200, success: true, message: 'Channels found', data: result });
+const searchChannels = catchAsync(async (req: Request, res: Response) => {
+
+  const searchTerm = req.query.searchTerm ? String(req.query.searchTerm) : "";
+  
+  const result = await ChannelServices.searchAllChannelsFromDB(
+    req.user.userId, 
+    searchTerm
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Channels discovered successfully',
+    data: result,
+  });
 });
 
 const requestToJoin = catchAsync(async (req, res) => {
@@ -113,6 +125,17 @@ const getChannelMembers = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const manageMembers = catchAsync(async (req: Request, res: Response) => {
+  const adminId = req.user.userId;
+  const result = await ChannelServices.toggleMemberInChannelInDB(adminId, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Member ${req.body.action === 'add' ? 'added' : 'removed'} successfully`,
+    data: result,
+  });
+});
 export const ChannelControllers = { 
   startPrivateChat, 
   createGroup, 
@@ -126,6 +149,7 @@ export const ChannelControllers = {
   getJoinRequests,
   actionOnRequest,searchRiders,
   getPrivateHistory,
-  getChannelMembers
+  getChannelMembers,
+  manageMembers
   
 };

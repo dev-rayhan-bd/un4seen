@@ -39,4 +39,9 @@ router.post(
   ChannelControllers.uploadAttachment
 );
 router.get('/:id/members', auth('member', 'admin'), ChannelControllers.getChannelMembers);
+router.patch(
+  '/manage-members',
+  auth(USER_ROLE.member, USER_ROLE.admin),
+  ChannelControllers.manageMembers
+);
 export const ChannelRoutes = router;

@@ -93,6 +93,7 @@ const getGiveawayPageDataFromDB = async () => {
     upcoming: upcoming
   };
 };
+
 export const GiveawayServices = {
   getAllGiveawaysFromDB,
   getActiveGiveawayFromDB,

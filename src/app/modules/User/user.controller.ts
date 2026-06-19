@@ -149,7 +149,19 @@ const getHomePageData = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body; 
 
+  const result = await UserServices.updateUserStatusInDB(id as string, status);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `User has been ${status} successfully`,
+    data: result,
+  });
+});
 
 export const UserControllers = {
   getMyProfile,
@@ -162,5 +174,5 @@ export const UserControllers = {
   getMyFollowers,
   getMyFollowing,
   getHomePageData,
-  getAllMembers
+  getAllMembers,updateUserStatus
 };

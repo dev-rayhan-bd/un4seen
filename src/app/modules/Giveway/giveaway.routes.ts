@@ -51,10 +51,6 @@ router.patch(
   '/:id',
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   upload.single('image'),
-  (req, res, next) => {
-    if (req.body.data) req.body = JSON.parse(req.body.data);
-    next();
-  },
   GiveawayControllers.updateGiveaway
 );
 
@@ -63,5 +59,14 @@ router.delete(
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   GiveawayControllers.deleteGiveaway
 );
-
+router.post(
+  '/create',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  upload.single('image'), 
+  (req, res, next) => {
+    if (req.body.data) req.body = JSON.parse(req.body.data); 
+    next();
+  },
+  GiveawayControllers.createGiveaway
+);
 export const GiveawayRoutes = router;

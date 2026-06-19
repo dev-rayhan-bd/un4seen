@@ -298,7 +298,35 @@ const getChannelMembersFromDB = async (channelId: string) => {
 
   return membersWithAdminStatus;
 };
+const toggleMemberInChannelInDB = async (
+  adminId: string, 
+  payload: { channelId: string; targetUserId: string; action: 'add' | 'remove' }
+) => {
+  const { channelId, targetUserId, action } = payload;
 
+  const channel = await Channel.findOne({ _id: channelId, admins: adminId });
+  
+  if (!channel) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only channel admins can manage members!");
+  }
+
+
+  let updateQuery;
+  if (action === 'add') {
+    updateQuery = { $addToSet: { members: targetUserId } };
+  } else {
+   
+    if (adminId === targetUserId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Admin cannot remove themselves!");
+    }
+    updateQuery = { $pull: { members: targetUserId, admins: targetUserId } }; 
+  }
+
+  const result = await Channel.findByIdAndUpdate(channelId, updateQuery, { new: true })
+    .populate('members', 'firstName lastName image memberNumber');
+
+  return result;
+};
 export const ChannelServices = { 
   getOrCreatePrivateChatInDB, 
   createGroupInDB, 
@@ -308,6 +336,6 @@ export const ChannelServices = {
   createMessageInDB,
   searchAllChannelsFromDB,
   sendJoinRequestInDB,getMyJoinedChannelsFromDB,
-  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB
+  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB,toggleMemberInChannelInDB
 
 };
