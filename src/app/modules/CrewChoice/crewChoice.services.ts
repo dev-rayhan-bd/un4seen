@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { CrewChoice } from './crewChoice.model';
 import moment from 'moment';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 const createPollInDB = async (payload: any) => {
   return await CrewChoice.create(payload);
@@ -81,18 +82,35 @@ const castVoteInDB = async (userId: string, pollId: string, optionIndex: number)
     { new: true }
   );
 };
-const getPastPollsFromDB = async (userId: string) => {
+
+
+const getPastPollsFromDB = async (userId: string, query: Record<string, unknown>) => {
   const now = new Date();
 
-  const polls = await CrewChoice.find({ 
-    isDeleted: false,
-    $or: [
-      { status: 'ended' },
-      { endDate: { $lte: now } }
-    ]
-  }).sort({ endDate: -1 });
 
-  return polls.map(poll => formatPollData(poll, userId, now));
+  const pollQuery = new QueryBuilder(
+    CrewChoice.find({ 
+      isDeleted: false,
+      $or: [
+        { status: 'ended' },
+        { endDate: { $lte: now } }
+      ]
+    }), 
+    query
+  )
+    .filter()
+    .sort() 
+    .paginate()
+    .fields();
+
+ 
+  const polls = await pollQuery.modelQuery;
+  const meta = await pollQuery.countTotal();
+
+
+  const result = polls.map(poll => formatPollData(poll, userId, now));
+
+  return { meta, result };
 };
 
 

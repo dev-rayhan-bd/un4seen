@@ -12,8 +12,13 @@ const setPasswordValidationSchema = z.object({
     password: z.string().min(8),
   }),
 });
+const changePasswordValidationSchema = z.object({
 
+    oldPassword: z.string().min(6),
+    newPassword: z.string().min(6),
+
+});
 export const AuthValidation = {
   loginValidationSchema,
-  setPasswordValidationSchema,
+  setPasswordValidationSchema,changePasswordValidationSchema
 };

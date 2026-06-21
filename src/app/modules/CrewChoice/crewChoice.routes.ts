@@ -8,12 +8,12 @@ const router = express.Router();
 
 router.post(
   '/create', 
-//   auth('admin', 'superAdmin'), 
+  auth('admin', 'superAdmin'), 
   validateRequest(CrewChoiceValidations.createPollSchema), 
   CrewChoiceControllers.createPoll
 );
 
-router.get('/', auth('member', 'admin', 'guest'), CrewChoiceControllers.getPolls);
+router.get('/', auth('member', 'admin', 'superAdmin'), CrewChoiceControllers.getPolls);
 
 router.patch(
   '/vote', 
@@ -21,5 +21,5 @@ router.patch(
   validateRequest(CrewChoiceValidations.voteSchema), 
   CrewChoiceControllers.votePoll
 );
-router.get('/past-results', auth('member', 'admin'), CrewChoiceControllers.getPastPolls);
+router.get('/past-results', auth('member', 'admin','superAdmin'), CrewChoiceControllers.getPastPolls);
 export const CrewChoiceRoutes = router;

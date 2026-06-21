@@ -327,6 +327,76 @@ const toggleMemberInChannelInDB = async (
 
   return result;
 };
+// const getAllReportsFromDB = async (query: Record<string, unknown>) => {
+//   const reportQuery = new QueryBuilder(
+//     MessageReport.find()
+//       .populate('reporter', 'firstName lastName email image') 
+//       .populate({
+//         path: 'message',
+//         populate: { path: 'sender', select: 'firstName lastName email image' } //(Reported User)
+//       }),
+//     query
+//   )
+//   .search(['reason'])
+//     .sort()
+//     .paginate();
+
+//   const reports = await reportQuery.modelQuery;
+//   const meta = await reportQuery.countTotal();
+
+
+//   const result = reports.map((report: any) => ({
+//     _id: report._id,
+//     reporter: report.reporter, // UI Column 1
+//     reportedUser: report.message?.sender || null, // UI Column 2
+//     type: 'MESSAGE', // UI Column 3 (Hardcoded as requested)
+//     reason: report.reason, // UI Column 4
+//     status: report.status,
+//     createdAt: report.createdAt
+//   }));
+
+//   return { meta, result };
+// };
+const getAllReportsFromDB = async (query: Record<string, unknown>) => {
+  const reportQuery = new QueryBuilder(
+    MessageReport.find()
+      .populate('reporter', 'firstName lastName email fullName image')
+      .populate({
+        path: 'message',
+        populate: { path: 'sender', select: 'firstName lastName email fullName image' }
+      }),
+    query
+  )
+    .sort()
+    .paginate();
+
+  const reports = await reportQuery.modelQuery;
+  const meta = await reportQuery.countTotal();
+
+  const result = reports.map((report: any) => ({
+    _id: report._id,
+    reporter: report.reporter, // UI: Reporter Section
+    reportedUser: report.message?.sender || null, // UI: Reported User Section
+
+
+    violationContent: report.message?.text 
+      ? report.message.text 
+      : (report.message?.file ? "Shared an attachment (File/Image)" : "Message content unavailable"),
+      
+
+    reporterComment: report.details || "No specific comment provided by reporter",
+    
+    type: report.reportType || 'MESSAGE',
+    reason: report.reason,
+    status: report.status,
+    createdAt: report.createdAt
+  }));
+
+  return { meta, result };
+};
+const resolveReportInDB = async (id: string) => {
+  return await MessageReport.findByIdAndUpdate(id, { status: 'resolved' }, { new: true });
+};
 export const ChannelServices = { 
   getOrCreatePrivateChatInDB, 
   createGroupInDB, 
@@ -336,6 +406,6 @@ export const ChannelServices = {
   createMessageInDB,
   searchAllChannelsFromDB,
   sendJoinRequestInDB,getMyJoinedChannelsFromDB,
-  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB,toggleMemberInChannelInDB
+  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB,toggleMemberInChannelInDB,getAllReportsFromDB,resolveReportInDB
 
 };

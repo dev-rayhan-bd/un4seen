@@ -136,6 +136,25 @@ const manageMembers = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getReports = catchAsync(async (req: Request, res: Response) => {
+  const result = await ChannelServices.getAllReportsFromDB(req.query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Reports retrieved successfully',
+    data: result,
+  });
+});
+
+const resolveReport = catchAsync(async (req: Request, res: Response) => {
+  const result = await ChannelServices.resolveReportInDB(req.params.id as string);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Report resolved successfully',
+    data: result,
+  });
+});
 export const ChannelControllers = { 
   startPrivateChat, 
   createGroup, 
@@ -150,6 +169,7 @@ export const ChannelControllers = {
   actionOnRequest,searchRiders,
   getPrivateHistory,
   getChannelMembers,
-  manageMembers
+  manageMembers,
+  getReports,resolveReport
   
 };

@@ -173,4 +173,30 @@ const refreshToken = async (token: string) => {
 
   return { accessToken };
 };
-export const AuthServices = { registerFromShopify, loginUser, forgotPassword, resendOTP, verifyOTP, resetPassword ,refreshToken};
+const changePassword = async (userId: string, payload: any) => {
+  const { oldPassword, newPassword } = payload;
+
+ 
+  const user = await UserModel.findById(userId).select('+password');
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  const isPasswordMatched = await UserModel.isPasswordMatched(
+    oldPassword,
+    user.password!,
+  );
+
+  if (!isPasswordMatched) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Old password does not match!');
+  }
+
+
+  user.password = newPassword;
+  user.passwordChangedAt = new Date();
+  await user.save();
+
+  return null;
+};
+export const AuthServices = { registerFromShopify, loginUser, forgotPassword, resendOTP, verifyOTP, resetPassword ,refreshToken,changePassword};

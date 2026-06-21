@@ -30,8 +30,19 @@ router.get(
 );
 router.get('/:id/messages', auth(USER_ROLE.member, USER_ROLE.admin), ChannelControllers.getMessages);
 
-router.post('/report', auth(USER_ROLE.member), validateRequest(ChannelValidations.reportMessageSchema), ChannelControllers.reportMessage);
+router.post('/report', auth(USER_ROLE.member), ChannelControllers.reportMessage);
 
+router.get(
+  '/admin/reports', 
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin), 
+  ChannelControllers.getReports
+);
+
+router.patch(
+  '/admin/reports/:id/resolve', 
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin), 
+  ChannelControllers.resolveReport
+);
 router.post(
   '/upload-file',
   auth(USER_ROLE.member, USER_ROLE.admin),

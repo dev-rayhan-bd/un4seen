@@ -2,6 +2,8 @@ import express from 'express';
 import { AuthControllers } from './auth.controller';
 import auth from '../../middleware/auth';
 import { USER_ROLE } from './auth.constant';
+import validateRequest from '../../middleware/validateRequest';
+import { AuthValidation } from './authValidation';
 
 const router = express.Router();
 
@@ -45,4 +47,10 @@ router.get('/shopify/callback', async (req, res) => {
   
   res.json({ access_token: data.access_token }); 
 })
+router.post(
+  '/change-password',
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), 
+  validateRequest(AuthValidation.changePasswordValidationSchema),
+  AuthControllers.changePassword
+);
 export const AuthRoutes = router;

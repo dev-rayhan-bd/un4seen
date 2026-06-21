@@ -29,6 +29,7 @@ export type TMessage = {
 };
 export type TMessageReport = {
   reporter: Types.ObjectId;
+  // reportType: 'message' | 'profile' | 'story';
   message: Types.ObjectId;
   reason: string;
   details?: string;

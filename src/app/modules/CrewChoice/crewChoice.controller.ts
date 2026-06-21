@@ -33,14 +33,20 @@ const votePoll = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+
 const getPastPolls = catchAsync(async (req: Request, res: Response) => {
-  const result = await CrewChoiceServices.getPastPollsFromDB(req.user.userId as string);
+
+  const result = await CrewChoiceServices.getPastPollsFromDB(
+    req.user.userId as string, 
+    req.query 
+  );
   
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: 'Past poll results retrieved successfully',
-    data: result,
+    data: result, 
   });
 });
 export const CrewChoiceControllers = { createPoll, getPolls, votePoll,getPastPolls };

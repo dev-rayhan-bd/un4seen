@@ -69,4 +69,9 @@ router.post(
   },
   GiveawayControllers.createGiveaway
 );
+router.delete(
+  '/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  GiveawayControllers.deleteGiveaway
+);
 export const GiveawayRoutes = router;

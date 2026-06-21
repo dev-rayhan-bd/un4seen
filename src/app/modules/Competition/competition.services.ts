@@ -135,21 +135,58 @@ const getLeaderboardFromDB = async (competitionId: string) => {
     .populate('user', 'firstName lastName image memberNumber');
 };
 
+// const setWinnerInDB = async (entryId: string) => {
+//   const entry = await CompetitionEntry.findById(entryId);
+//   if (!entry) throw new AppError(httpStatus.NOT_FOUND, 'Entry not found');
+
+
+//   await CompetitionEntry.updateMany({ competition: entry.competition }, { isWinner: false });
+
+//   entry.isWinner = true;
+//   await entry.save();
+
+
+//   await PointServices.addPoints(entry.user.toString(), 'bike_winner' as any, 500);
+  
+//   return entry;
+// };
+
 const setWinnerInDB = async (entryId: string) => {
-  const entry = await CompetitionEntry.findById(entryId);
+
+  const entry = await CompetitionEntry.findById(entryId).populate('competition');
   if (!entry) throw new AppError(httpStatus.NOT_FOUND, 'Entry not found');
 
+  const competition = entry.competition as any;
+  const now = new Date();
 
-  await CompetitionEntry.updateMany({ competition: entry.competition }, { isWinner: false });
+  if (now < new Date(competition.endDate)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST, 
+      `Cannot declare winner yet! This competition ends on ${new Date(competition.endDate).toLocaleString()}`
+    );
+  }
+
+  const existingWinner = await CompetitionEntry.findOne({ 
+    competition: competition._id, 
+    isWinner: true 
+  });
+
+  if (existingWinner) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST, 
+      "A winner has already been declared for this competition! You cannot change it now."
+    );
+  }
 
   entry.isWinner = true;
   await entry.save();
-
 
   await PointServices.addPoints(entry.user.toString(), 'bike_winner' as any, 500);
   
   return entry;
 };
+
+
 const getRunningCompetitionFromDB = async (currentUserId?: string) => {
   const now = new Date();
 

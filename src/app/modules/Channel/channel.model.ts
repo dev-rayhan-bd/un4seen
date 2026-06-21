@@ -29,6 +29,11 @@ const reportSchema = new Schema<TMessageReport>(
       ref: 'User', 
       required: true 
     },
+    //  reportType: { 
+    //   type: String, 
+    //   enum: ['message', 'profile', 'story'], 
+    //   required: true 
+    // },
     message: { 
       type: Schema.Types.ObjectId, 
       ref: 'Message', 

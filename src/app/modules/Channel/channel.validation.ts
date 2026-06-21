@@ -18,6 +18,7 @@ const startPrivateChatSchema = z.object({
 const reportMessageSchema = z.object({
 
     message: z.string( "Message ID is required" ),
+    reportType: z.string( "Reason is required" ),
     reason: z.string( "Reason is required" ),
     details: z.string().optional(),
 

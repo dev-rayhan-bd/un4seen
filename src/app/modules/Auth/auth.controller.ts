@@ -85,5 +85,17 @@ const refreshToken = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user; 
+  const passwordData = req.body;
 
-export const AuthControllers = { login, shopifyWebhook, forgotPassword, resendOTP, verifyOTP, resetPassword,refreshToken };
+  await AuthServices.changePassword(userId, passwordData);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Password changed successfully!',
+    data: null,
+  });
+});
+export const AuthControllers = { login, shopifyWebhook, forgotPassword, resendOTP, verifyOTP, resetPassword,refreshToken ,changePassword};

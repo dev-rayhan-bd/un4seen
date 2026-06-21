@@ -24,6 +24,7 @@ import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
 import { ChannelRoutes } from '../modules/Channel/channel.routes';
 import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notification.routes';
 import { PostRoutes } from '../modules/Post/post.routes';
+import { Un4seenWorldRoutes } from '../modules/Un4seenWorld/un4seenWorld.routes';
 
 
 
@@ -126,7 +127,11 @@ const moduleRoutes = [
   {
     path: '/posts',
     route: PostRoutes,
-  }
+  },
+  {
+    path: '/un4seen-world',
+    route: Un4seenWorldRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
