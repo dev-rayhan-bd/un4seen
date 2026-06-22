@@ -8,6 +8,7 @@ import seedAdmin from './app/DB';
 import 'dotenv/config';
 import { initializeSocket } from './app/utils/socket';
 import { UserModel } from './app/modules/User/user.model';
+import { syncPointValues } from './app/modules/ShredPoints/points.constant';
 
 
 
@@ -21,7 +22,7 @@ async function main() {
     server = app.listen(config.port, () => {
       console.log(`app is listening on port ${config.port}`);
     });
-
+  await syncPointValues();
     initializeSocket(server);
   } catch (err) {
     console.log(err);

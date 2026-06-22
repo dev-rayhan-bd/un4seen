@@ -25,6 +25,7 @@ import { ChannelRoutes } from '../modules/Channel/channel.routes';
 import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notification.routes';
 import { PostRoutes } from '../modules/Post/post.routes';
 import { Un4seenWorldRoutes } from '../modules/Un4seenWorld/un4seenWorld.routes';
+import { PointSettingRoutes } from '../modules/PointSettings/pointSettings.routes';
 
 
 
@@ -131,6 +132,10 @@ const moduleRoutes = [
   {
     path: '/un4seen-world',
     route: Un4seenWorldRoutes,
+  },
+  {
+    path: '/point-setting',
+    route: PointSettingRoutes,
   },
 ];
 
