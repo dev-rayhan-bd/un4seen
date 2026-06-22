@@ -20,7 +20,7 @@ router.post(
   RideControllers.createRide
 );
 
-router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), RideControllers.getAllRides);
+router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getAllRides);
 
 router.patch(
   '/:id/vote', 
@@ -29,7 +29,7 @@ router.patch(
   RideControllers.submitVote
 );
 
-router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), RideControllers.getLeaderboard);
+router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getLeaderboard);
 
 router.patch('/:id/set-winner',
    auth(USER_ROLE.admin, USER_ROLE.superAdmin),

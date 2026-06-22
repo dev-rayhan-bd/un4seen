@@ -26,6 +26,7 @@ import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notifi
 import { PostRoutes } from '../modules/Post/post.routes';
 import { Un4seenWorldRoutes } from '../modules/Un4seenWorld/un4seenWorld.routes';
 import { PointSettingRoutes } from '../modules/PointSettings/pointSettings.routes';
+import { AdminRoutes } from '../modules/Admin/admin.routes';
 
 
 
@@ -136,6 +137,10 @@ const moduleRoutes = [
   {
     path: '/point-setting',
     route: PointSettingRoutes,
+  },
+  {
+    path: '/admin',
+    route: AdminRoutes,
   },
 ];
 

@@ -20,7 +20,7 @@ const storySchema = new Schema<TStory>(
     expiresAt: { 
       type: Date, 
       default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), 
-      index: { expires: 0 } 
+      // index: { expires: 0 } 
     },
     createdAt: { type: Date, default: Date.now }
   },

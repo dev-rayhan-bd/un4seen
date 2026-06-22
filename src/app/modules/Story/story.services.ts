@@ -50,10 +50,29 @@ const getAllStoriesFromDB = async (currentUserId: string, userRole: string) => {
 
 
 
+// const getMySavedStoriesFromDB = async (userId: string) => {
+//   const saved = await SavedStory.find({ user: userId })
+//     .populate({
+//       path: 'story',
+//       populate: [
+//         { path: 'user', select: 'firstName lastName image memberNumber' },
+//         { path: 'music', select: 'title audioUrl' } 
+//       ]
+//     })
+//     .sort({ createdAt: -1 });
+
+//   return saved.map(s => ({
+//     ...s.toObject(),
+//     timeAgo: moment(s.createdAt).fromNow()
+//   }));
+// };
+
+
 const getMySavedStoriesFromDB = async (userId: string) => {
   const saved = await SavedStory.find({ user: userId })
     .populate({
       path: 'story',
+      match: { isDeleted: false }, 
       populate: [
         { path: 'user', select: 'firstName lastName image memberNumber' },
         { path: 'music', select: 'title audioUrl' } 
@@ -61,12 +80,14 @@ const getMySavedStoriesFromDB = async (userId: string) => {
     })
     .sort({ createdAt: -1 });
 
-  return saved.map(s => ({
-    ...s.toObject(),
-    timeAgo: moment(s.createdAt).fromNow()
-  }));
-};
 
+  return saved
+    .filter(s => s.story !== null) 
+    .map(s => ({
+      ...s.toObject(),
+      timeAgo: moment((s.story as any).createdAt).fromNow()
+    }));
+};
 
 const toggleHeartInDB = async (userId: string, storyId: string) => {
   const story = await Story.findById(storyId);
