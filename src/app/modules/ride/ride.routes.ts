@@ -19,7 +19,11 @@ router.post(
   validateRequest(RideValidations.createRideValidationSchema),
   RideControllers.createRide
 );
-
+router.delete(
+  '/:id', 
+  auth(USER_ROLE.member, USER_ROLE.admin), 
+  RideControllers.deleteRide
+);
 router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getAllRides);
 
 router.patch(

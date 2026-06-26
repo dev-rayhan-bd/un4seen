@@ -7,13 +7,34 @@ import { PointServices } from '../ShredPoints/points.services';
 import { sendNotification } from '../../utils/sendNotification';
 import { TRide } from './ride.interface';
 
+// const createRideInDB = async (payload: Partial<TRide>) => {
+//   const result = await Ride.create(payload);
+
+//   await PointServices.addPoints(payload.user!.toString(), 'social_share' as any, 50);
+//   return result;
+// };
 const createRideInDB = async (payload: Partial<TRide>) => {
+
+  const existingRide = await Ride.findOne({ 
+    user: payload.user, 
+    isDeleted: false 
+  });
+
+  if (existingRide) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST, 
+      "You already have an active ride. Please delete the current one to upload a new ride."
+    );
+  }
+
+
   const result = await Ride.create(payload);
 
+
   await PointServices.addPoints(payload.user!.toString(), 'social_share' as any, 50);
+  
   return result;
 };
-
 const getAllRidesFromDB = async (query: Record<string, unknown>, currentUserId?: string) => {
   const rideQuery = new QueryBuilder(
     Ride.find({ isDeleted: false }).populate('user', 'firstName lastName image memberNumber status country'), 
@@ -120,6 +141,19 @@ const setBikeOfTheWeekInDB = async (rideId: string) => {
 
   return ride;
 };
+const deleteMyRideFromDB = async (userId: string, rideId: string) => {
+  const result = await Ride.findOneAndUpdate(
+    { _id: rideId, user: userId },
+    { isDeleted: true },
+    { new: true }
+  );
+
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, "Ride not found or you are not authorized to delete this.");
+  }
+
+  return result;
+};
 
 export const RideServices = {
   createRideInDB,
@@ -127,5 +161,5 @@ export const RideServices = {
   voteRideInDB,
   removeVoteFromRideInDB,
   getLeaderboardFromDB,
-  setBikeOfTheWeekInDB
+  setBikeOfTheWeekInDB,deleteMyRideFromDB
 };

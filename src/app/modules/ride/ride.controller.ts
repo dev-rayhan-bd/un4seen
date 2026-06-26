@@ -69,5 +69,17 @@ const makeBikeOfWeek = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const deleteRide = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { userId } = req.user;
 
-export const RideControllers = { createRide, getAllRides, submitVote, getLeaderboard, makeBikeOfWeek };
+  await RideServices.deleteMyRideFromDB(userId as string, id as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Ride deleted successfully. You can now upload a new one.',
+    data: null,
+  });
+});
+export const RideControllers = { createRide, getAllRides, submitVote, getLeaderboard, makeBikeOfWeek ,deleteRide};
