@@ -26,6 +26,12 @@ router.delete(
 );
 router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getAllRides);
 
+router.get(
+  '/my-rides',
+  auth(USER_ROLE.member, USER_ROLE.admin),
+  RideControllers.getMyRides
+);
+
 router.patch(
   '/:id/vote', 
   auth(USER_ROLE.member, USER_ROLE.admin), 

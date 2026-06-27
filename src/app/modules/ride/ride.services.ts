@@ -141,6 +141,34 @@ const setBikeOfTheWeekInDB = async (rideId: string) => {
 
   return ride;
 };
+const getMyRidesFromDB = async (userId: string, query: Record<string, unknown>) => {
+  const myRideQuery = new QueryBuilder(
+    Ride.find({ user: userId, isDeleted: false }).populate('user', 'firstName lastName image memberNumber status country'),
+    { ...query, user: userId }
+  )
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await myRideQuery.modelQuery;
+  const meta = await myRideQuery.countTotal();
+
+  const modifiedResult = result.map((ride) => {
+    const rideObj = ride.toObject();
+    const myVote = ride.votes.find(v => v.user.toString() === userId?.toString());
+
+    return {
+      ...rideObj,
+      isVoted: !!myVote,
+      myRating: myVote ? myVote.rating : 0,
+      votes: undefined
+    };
+  });
+
+  return { meta, result: modifiedResult };
+};
+
 const deleteMyRideFromDB = async (userId: string, rideId: string) => {
   const result = await Ride.findOneAndUpdate(
     { _id: rideId, user: userId },
@@ -161,5 +189,7 @@ export const RideServices = {
   voteRideInDB,
   removeVoteFromRideInDB,
   getLeaderboardFromDB,
-  setBikeOfTheWeekInDB,deleteMyRideFromDB
+  setBikeOfTheWeekInDB,
+  getMyRidesFromDB,
+  deleteMyRideFromDB
 };

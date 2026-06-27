@@ -69,6 +69,18 @@ const makeBikeOfWeek = catchAsync(async (req, res) => {
     data: result,
   });
 });
+const getMyRides = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+  const result = await RideServices.getMyRidesFromDB(userId as string, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'My rides retrieved successfully',
+    data: result,
+  });
+});
+
 const deleteRide = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { userId } = req.user;
@@ -82,4 +94,4 @@ const deleteRide = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
-export const RideControllers = { createRide, getAllRides, submitVote, getLeaderboard, makeBikeOfWeek ,deleteRide};
+export const RideControllers = { createRide, getAllRides, submitVote, getLeaderboard, makeBikeOfWeek, getMyRides, deleteRide};
