@@ -58,7 +58,7 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
     success: true,
     message: result?.isProfileComplete 
       ? 'Your Syndicate profile has been updated' 
-      : 'Try Again',
+      : 'Your Syndicate profile has been updated',
     data: result,
   });
 });
