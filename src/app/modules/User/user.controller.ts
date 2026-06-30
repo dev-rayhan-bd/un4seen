@@ -57,8 +57,8 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     success: true,
     message: result?.isProfileComplete 
-      ? 'Profile completed! Welcome to the Syndicate.' 
-      : 'Your Syndicate profile has been updated',
+      ? 'Your Syndicate profile has been updated' 
+      : 'Try Again',
     data: result,
   });
 });
