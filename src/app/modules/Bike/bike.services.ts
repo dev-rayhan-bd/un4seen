@@ -147,6 +147,16 @@ const removeImagesFromGalleryInDB = async (
 
   return result;
 };
+const deleteRetiredBikeFromDB = async (bikeId: string, userId: string) => {
+  const bike = await Bike.findOne({ _id: bikeId, user: userId, isRetired: true });
+  if (!bike) throw new AppError(httpStatus.NOT_FOUND, 'Retired bike not found or unauthorized');
+
+  await Bike.findByIdAndDelete(bikeId);
+  await SavedBike.deleteMany({ bike: bikeId });
+
+  return { message: 'Retired bike deleted successfully' };
+};
+
 export const BikeServices = {
   addBikeToDB,
   getMyActiveBikeFromDB,
@@ -159,4 +169,5 @@ export const BikeServices = {
     getMySavedBikesFromDB,
     addImagesToBikeGalleryInDB,
     removeImagesFromGalleryInDB,
+    deleteRetiredBikeFromDB,
 };

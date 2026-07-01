@@ -151,4 +151,15 @@ const deleteGalleryImages = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-export const BikeControllers = { addBike, getUserBikeProfile, updateBike, toggleSaveBike, getSavedBikes, getBikeGallery, getSingleBike, uploadToGallery, deleteGalleryImages };
+const deleteRetiredBike = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await BikeServices.deleteRetiredBikeFromDB(id as string, req.user.userId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Retired bike deleted successfully',
+    data: result,
+  });
+});
+
+export const BikeControllers = { addBike, getUserBikeProfile, updateBike, toggleSaveBike, getSavedBikes, getBikeGallery, getSingleBike, uploadToGallery, deleteGalleryImages, deleteRetiredBike };

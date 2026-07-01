@@ -117,5 +117,15 @@ const toggleSaveStoryInDB = async (userId: string, storyId: string) => {
   }
 };
 
+const deleteStoryFromDB = async (storyId: string, userId: string) => {
+  const story = await Story.findOne({ _id: storyId, user: userId, isDeleted: false });
+  if (!story) throw new AppError(httpStatus.NOT_FOUND, 'Story not found or unauthorized');
 
-export const StoryServices = { createStoryInDB, getAllStoriesFromDB, toggleHeartInDB, toggleSaveStoryInDB, getMySavedStoriesFromDB };
+  await Story.findByIdAndUpdate(storyId, { isDeleted: true });
+  await SavedStory.deleteMany({ story: storyId });
+
+  return { message: 'Story deleted successfully' };
+};
+
+
+export const StoryServices = { createStoryInDB, getAllStoriesFromDB, toggleHeartInDB, toggleSaveStoryInDB, getMySavedStoriesFromDB, deleteStoryFromDB };

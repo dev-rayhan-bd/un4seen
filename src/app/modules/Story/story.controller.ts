@@ -66,4 +66,15 @@ const getSavedStories = catchAsync(async (req, res) => {
     data: result,
   });
 });
-export const StoryControllers = { createStory, getStories, toggleHeart, toggleSaveStory, getSavedStories };
+const deleteStory = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await StoryServices.deleteStoryFromDB(id as string, req.user.userId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Story deleted successfully',
+    data: result,
+  });
+});
+
+export const StoryControllers = { createStory, getStories, toggleHeart, toggleSaveStory, getSavedStories, deleteStory };

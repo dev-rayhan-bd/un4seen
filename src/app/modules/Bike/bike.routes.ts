@@ -35,4 +35,5 @@ router.patch(
   auth('member', 'admin'),
   BikeControllers.deleteGalleryImages
 );
+router.delete('/retired/:id', auth('member'), BikeControllers.deleteRetiredBike);
 export const BikeRoutes = router;
