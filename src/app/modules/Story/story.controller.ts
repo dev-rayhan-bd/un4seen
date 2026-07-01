@@ -26,7 +26,8 @@ const createStory = catchAsync(async (req: Request, res: Response) => {
 
 const getStories = catchAsync(async (req: Request, res: Response) => {
   const isDeleted = req.query.isDeleted === 'true' ? true : req.query.isDeleted === 'false' ? false : undefined;
-  const result = await StoryServices.getAllStoriesFromDB(req.user.userId, req.user.role, isDeleted);
+  const isOwnStory = req.query.isOwnStory === 'true' ? true : req.query.isOwnStory === 'false' ? false : undefined;
+  const result = await StoryServices.getAllStoriesFromDB(req.user.userId, req.user.role, isDeleted, isOwnStory);
   
   sendResponse(res, {
     statusCode: 200,

@@ -19,7 +19,7 @@ const createStoryInDB = async (userId: string, payload: any) => {
   return populatedStory;
 };
 
-const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDeleted?: boolean) => {
+const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDeleted?: boolean, isOwnStory?: boolean) => {
   const query: any = { 
     expiresAt: { $gt: new Date() } 
   };
@@ -28,6 +28,12 @@ const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDe
     query.isDeleted = isDeleted;
   } else {
     query.isDeleted = false;
+  }
+
+  if (isOwnStory === true) {
+    query.user = currentUserId;
+  } else if (isOwnStory === false) {
+    query.user = { $ne: currentUserId };
   }
 
   if (userRole === 'guest') {
@@ -44,6 +50,7 @@ const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDe
       const isSaved = await SavedStory.exists({ user: currentUserId, story: story._id });
       return {
         ...story.toObject(),
+        isOwnStory: (story.user as any)._id.toString() === currentUserId,
         isHearted: story.hearts.includes(currentUserId as any),
         isSaved: !!isSaved,
         timeAgo: moment(story.createdAt).fromNow(), 
