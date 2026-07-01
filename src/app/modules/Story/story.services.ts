@@ -19,12 +19,16 @@ const createStoryInDB = async (userId: string, payload: any) => {
   return populatedStory;
 };
 
-const getAllStoriesFromDB = async (currentUserId: string, userRole: string) => {
+const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDeleted?: boolean) => {
   const query: any = { 
-    isDeleted: false, 
     expiresAt: { $gt: new Date() } 
   };
 
+  if (isDeleted !== undefined) {
+    query.isDeleted = isDeleted;
+  } else {
+    query.isDeleted = false;
+  }
 
   if (userRole === 'guest') {
     query.isPremium = false;
