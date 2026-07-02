@@ -3,7 +3,7 @@ import axios from 'axios';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { getShopifyProductsFromDB } from './shopify.service';
+import {   fetchAllProductsFromShopify, getSelectedProductsForApp, getShopifyProductsFromDB, saveAdminSelection, toggleAdminSelection } from './shopify.service';
 
 
 
@@ -51,8 +51,72 @@ const getStoreProducts = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+
+
+
+// ----------------------------test----------------------------------
+
+
+const selectProducts = catchAsync(async (req: Request, res: Response) => {
+  const { productIds } = req.body; // Array of IDs
+  const result = await saveAdminSelection(productIds);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Products selected successfully',
+    data: result
+  });
+});
+
+const getAppStoreFeed = catchAsync(async (req: Request, res: Response) => {
+  const result = await getSelectedProductsForApp();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'App store feed retrieved',
+    data: result
+  });
+});
+
+
+
+const getAllProducts = catchAsync(async (req: Request, res: Response) => {
+
+  const result = await fetchAllProductsFromShopify(req.query);
+  
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Shopify products retrieved with filters and images',
+    data: result
+  });
+});
+
+
+const toggleProduct = catchAsync(async (req: Request, res: Response) => {
+  const { productId } = req.body;
+  const result = await toggleAdminSelection(productId);
+  
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Selection updated successfully',
+    data: result
+  });
+});
+
+
+
+
 export const ShopifyControllers = {
   generateAdminToken,
-  getStoreProducts
+  getStoreProducts,
+  // -----test-------------
+
+  selectProducts,
+  getAppStoreFeed,
+  getAllProducts,
+  toggleProduct
 
 };

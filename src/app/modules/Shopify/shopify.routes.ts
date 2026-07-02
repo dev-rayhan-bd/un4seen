@@ -16,4 +16,13 @@ router.get(
   auth('member', 'admin', 'guest'), 
   ShopifyControllers.getStoreProducts
 );
+
+
+router.get('/all-products', auth('admin', 'superAdmin'), ShopifyControllers.getAllProducts);
+
+
+router.post('/select-products', auth('admin', 'superAdmin'), ShopifyControllers.selectProducts);
+
+router.post('/toggle-selection', auth('admin', 'superAdmin'), ShopifyControllers.toggleProduct);
+router.get('/app-store', ShopifyControllers.getAppStoreFeed);
 export const ShopifyRoutes = router;

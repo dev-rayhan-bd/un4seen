@@ -3,6 +3,7 @@ import config from '../../config';
 import { ShopifyToken } from './shopify.model';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status'
+import { ShopifySelection } from './shopifySelection.model';
 const SHOPIFY_URL = `https://un4seen.myshopify.com/admin/api/2024-04`;
 
 
@@ -172,5 +173,169 @@ export const getShopifyProductsFromDB = async (query: Record<string, unknown>) =
   }
 };
 
+// -----------------------------------------------------------------------new feature-------------------------------------------------
 
 
+export const saveAdminSelection = async (ids: string[]) => {
+  return await ShopifySelection.findOneAndUpdate(
+    {}, 
+    { selectedProductIds: ids }, 
+    { upsert: true, new: true }
+  );
+};
+
+
+export const getSelectedProductsForApp = async () => {
+
+  const selection = await ShopifySelection.findOne();
+  if (!selection || selection.selectedProductIds.length === 0) return [];
+
+  const accessToken = await getValidShopifyToken();
+  const ids = selection.selectedProductIds.join(',');
+
+  const response = await axios.get(`${SHOPIFY_URL}/products.json?ids=${ids}`, {
+    headers: { 'X-Shopify-Access-Token': accessToken }
+  });
+
+  return response.data.products.map((p: any) => {
+    const variant = p.variants[0];
+    const price = parseFloat(variant?.price || "0");
+    const comparePrice = parseFloat(variant?.compare_at_price || "0");
+
+    let discount = null;
+    if (comparePrice > price) {
+      discount = `${Math.round(((comparePrice - price) / comparePrice) * 100)}% OFF`;
+    }
+
+    return {
+      id: p.id,                   
+      title: p.title,               
+      handle: p.handle,             
+      price: price.toFixed(2),     
+      compareAtPrice: comparePrice > 0 ? comparePrice.toFixed(2) : null, 
+      discountPercentage: discount,  
+      image: p.image?.src || (p.images.length > 0 ? p.images[0].src : null),
+      brand: p.vendor,              
+      category: p.product_type,     
+     
+      productUrl: `https://un4seendecals.com/products/${p.handle}?discount=SYNDICATE`
+    };
+  });
+};
+
+
+
+
+
+
+export const fetchAllProductsFromShopify = async (query: Record<string, any>) => {
+  const accessToken = await getValidShopifyToken();
+  const SHOPIFY_URL = `https://${process.env.SHOPIFY_STORE_NAME}.myshopify.com/admin/api/2024-04/products.json`;
+  const currentSelection = await ShopifySelection.findOne();
+  const selectedIds = currentSelection ? currentSelection.selectedProductIds : [];
+
+  const { limit = 50, page_info, title, vendor, product_type } = query;
+  let params: any = { limit };
+
+  if (page_info) {
+    params.page_info = page_info;
+  } else {
+    if (title) params.title = title;
+    if (vendor) params.vendor = vendor;
+    if (product_type) params.product_type = product_type;
+  }
+
+  const response = await axios.get(SHOPIFY_URL, {
+    headers: { 'X-Shopify-Access-Token': accessToken },
+    params
+  });
+
+  const products = response.data.products.map((p: any) => {
+
+    const variant = p.variants[0];
+    const price = parseFloat(variant?.price || "0");
+    const compareAtPrice = parseFloat(variant?.compare_at_price || "0");
+    
+    let discountPercentage = 0;
+    if (compareAtPrice > price) {
+      discountPercentage = Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+    }
+
+    const cleanDescription = p.body_html 
+      ? p.body_html.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...'
+      : "No description available";
+ const pId = p.id.toString();
+    return {
+      id: p.id,
+      title: p.title,
+      handle: p.handle,
+      description: cleanDescription,
+      vendor: p.vendor, 
+      category: p.product_type,
+      tags: p.tags ? p.tags.split(',') : [], 
+      status: p.status, // active, draft, or archived
+      image: p.image?.src || (p.images.length > 0 ? p.images[0].src : null),
+      price: price.toFixed(2),
+      currency: "NZD",
+      compareAtPrice: compareAtPrice > 0 ? compareAtPrice.toFixed(2) : null,
+      discountPercentage: discountPercentage > 0 ? `${discountPercentage}% OFF` : null,
+      isOnSale: compareAtPrice > price,
+      inventory: variant?.inventory_quantity || 0,
+      stockStatus: (variant?.inventory_quantity || 0) > 0 ? "In Stock" : "Out of Stock",
+      publishedAt: p.published_at,
+      shopifyUrl: `https://${process.env.SHOPIFY_STORE_NAME}.myshopify.com/products/${p.handle}`,
+      isSelected: selectedIds.includes(pId) 
+    };
+  });
+
+
+  const linkHeader = response.headers['link'];
+  let nextPageToken = '';
+  let prevPageToken = '';
+
+  if (linkHeader) {
+  
+    const nextMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="next"/);
+    if (nextMatch) nextPageToken = nextMatch[1];
+
+   
+    const prevMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="previous"/);
+    if (prevMatch) prevPageToken = prevMatch[1];
+  }
+
+  return {
+    meta: {
+      next_page_info: nextPageToken,
+        prev_page_info: prevPageToken,
+      count: products.length
+    },
+    result: products
+  };
+};
+
+export const toggleAdminSelection = async (productId: string) => {
+  const selection = await ShopifySelection.findOne();
+
+  if (!selection) {
+
+    return await ShopifySelection.create({ selectedProductIds: [productId] });
+  }
+
+  const isAlreadySelected = selection.selectedProductIds.includes(productId);
+
+  if (isAlreadySelected) {
+  
+    return await ShopifySelection.findOneAndUpdate(
+      {},
+      { $pull: { selectedProductIds: productId } },
+      { new: true }
+    );
+  } else {
+
+    return await ShopifySelection.findOneAndUpdate(
+      {},
+      { $addToSet: { selectedProductIds: productId } },
+      { new: true }
+    );
+  }
+};
