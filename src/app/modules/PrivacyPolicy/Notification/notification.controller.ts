@@ -4,6 +4,7 @@ import httpStatus from 'http-status';
 import { NotificationServices } from './notification.services';
 import catchAsync from '../../../utils/catchAsync';
 import sendResponse from '../../../utils/sendResponse';
+import AppError from '../../../errors/AppError';
 
 const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
   const result = await NotificationServices.getMyNotificationsFromDB(req.user.userId, req.query);
@@ -35,8 +36,33 @@ const markSingleAsRead = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const testNotification = catchAsync(async (req: Request, res: Response) => {
+  const token = req.query.token as string;
+  if (!token) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'FCM token is required as query param');
+  }
+
+  const admin = require('firebase-admin');
+  const payload = {
+    notification: {
+      title: 'Test Notification 🎉',
+      body: 'If you see this, push notifications are working!',
+    },
+    token,
+  };
+
+  const response = await admin.messaging().send(payload);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Test notification sent successfully',
+    data: { messageId: response },
+  });
+});
+
 export const NotificationControllers = {
   getMyNotifications,
   markAllAsRead,
-  markSingleAsRead
+  markSingleAsRead,
+  testNotification
 };

@@ -27,4 +27,7 @@ router.patch(
   NotificationControllers.markSingleAsRead
 );
 
+// Test push notification - no auth required
+router.post('/test-notification', NotificationControllers.testNotification);
+
 export const NotificationRoutes = router;
