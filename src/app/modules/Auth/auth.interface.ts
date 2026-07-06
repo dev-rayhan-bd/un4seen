@@ -1,7 +1,7 @@
 export type TLoginUser={
     email:string;
     password:string;
-    fcmToken:String
+    fcmToken?:string  // optional - app sends on login
 }
 export type TLoginAdmin={
     email:string;

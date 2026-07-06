@@ -114,6 +114,11 @@ const loginUser = async (payload: any) => {
     throw new AppError(httpStatus.FORBIDDEN, 'Invalid email or password');
   }
 
+  // Save FCM token if provided (from mobile app on login)
+  if (payload.fcmToken) {
+    await UserModel.findByIdAndUpdate(user._id, { fcmToken: payload.fcmToken });
+  }
+
   const jwtPayload = { userId: user._id!.toString(), role: user.role };
   const accessToken = createToken(jwtPayload, config.jwt_access_secret!, config.jwt_access_expires_in!);
   const refreshToken = createToken(jwtPayload, config.jwt_refresh_secret!, config.jwt_refresh_expires_in!);
