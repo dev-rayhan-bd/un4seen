@@ -3,8 +3,11 @@ import AppError from '../../errors/AppError';
 import { CrewChoice } from './crewChoice.model';
 import moment from 'moment';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { computeDateBasedStatus } from '../../utils/computeDateBasedStatus';
 
 const createPollInDB = async (payload: any) => {
+  const phase = computeDateBasedStatus(payload.startDate || new Date(), payload.endDate);
+  payload.status = phase === 'ended' ? 'ended' : 'active';
   return await CrewChoice.create(payload);
 };
 

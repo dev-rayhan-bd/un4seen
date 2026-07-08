@@ -16,7 +16,14 @@ const createStoryInDB = async (userId: string, payload: any) => {
   const populatedStory = await Story.findById(result._id)
     .populate('user', 'firstName lastName image memberNumber')
     .populate('music', 'title audioUrl category');
-  return populatedStory;
+
+  return {
+    ...populatedStory!.toObject(),
+    isOwnStory: true,
+    isHearted: false,
+    isSaved: false,
+    timeAgo: 'just now',
+  };
 };
 
 const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDeleted?: boolean, isOwnStory?: boolean) => {
@@ -94,10 +101,16 @@ const getMySavedStoriesFromDB = async (userId: string) => {
 
   return saved
     .filter(s => s.story !== null) 
-    .map(s => ({
-      ...s.toObject(),
-      timeAgo: moment((s.story as any).createdAt).fromNow()
-    }));
+    .map(s => {
+      const storyObj = (s.story as any);
+      return {
+        ...s.toObject(),
+        isOwnStory: storyObj.user?._id?.toString() === userId,
+        isHearted: storyObj.hearts?.includes(userId as any) ?? false,
+        isSaved: true,
+        timeAgo: moment(storyObj.createdAt).fromNow()
+      };
+    });
 };
 
 const toggleHeartInDB = async (userId: string, storyId: string) => {

@@ -3,6 +3,7 @@ import AppError from '../../errors/AppError';
 import { Giveaway } from './giveaway.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { TGiveaway } from './giveaway.interface';
+import { computeDateBasedStatus } from '../../utils/computeDateBasedStatus';
 
 const getAllGiveawaysFromDB = async (query: Record<string, unknown>) => {
   const giveawayQuery = new QueryBuilder(Giveaway.find().populate('winner', 'firstName lastName image memberNumber'), query)
@@ -33,6 +34,8 @@ const getSingleGiveawayFromDB = async (id: string) => {
 };
 
 const createGiveawayIntoDB = async (payload: TGiveaway) => {
+  const phase = computeDateBasedStatus(payload.startDate, payload.endDate);
+  payload.status = phase === 'ended' ? 'completed' : 'pending';
   const result = await Giveaway.create(payload);
   return result;
 };
@@ -52,8 +55,16 @@ const updateGiveawayWinnerInDB = async (id: string, winnerId: string) => {
   return result;
 };
 const updateGiveawayInDB = async (id: string, payload: Partial<TGiveaway>) => {
+  const existing = await Giveaway.findById(id);
+  if (!existing) throw new AppError(httpStatus.NOT_FOUND, 'Giveaway not found');
+
+  const startDate = payload.startDate || existing.startDate;
+  const endDate = payload.endDate || existing.endDate;
+
+  const phase = computeDateBasedStatus(startDate, endDate);
+  payload.status = phase === 'ended' ? 'completed' : 'pending';
+
   const result = await Giveaway.findByIdAndUpdate(id, payload, { new: true });
-  if (!result) throw new AppError(httpStatus.NOT_FOUND, 'Giveaway not found');
   return result;
 };
 
