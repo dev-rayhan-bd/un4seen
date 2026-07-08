@@ -98,4 +98,16 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
     data: null,
   });
 });
-export const AuthControllers = { login, shopifyWebhook, forgotPassword, resendOTP, verifyOTP, resetPassword,refreshToken ,changePassword};
+
+const logout = catchAsync(async (req: Request, res: Response) => {
+  await AuthServices.logoutUser(req.user.userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Logged out successfully',
+    data: null,
+  });
+});
+
+export const AuthControllers = { login, shopifyWebhook, forgotPassword, resendOTP, verifyOTP, resetPassword,refreshToken ,changePassword, logout};

@@ -103,6 +103,13 @@ const resetPassword = async (payload: any) => {
   return null;
 };
 
+const logoutUser = async (userId: string) => {
+  await UserModel.findByIdAndUpdate(userId, {
+    fcmToken: null,
+    isOnline: false,
+  });
+};
+
 const loginUser = async (payload: any) => {
   const user = await UserModel.isUserExistsByEmail(payload.email);
   if (!user || user.isDeleted || user.status === 'blocked') {
@@ -204,4 +211,4 @@ const changePassword = async (userId: string, payload: any) => {
 
   return null;
 };
-export const AuthServices = { registerFromShopify, loginUser, forgotPassword, resendOTP, verifyOTP, resetPassword ,refreshToken,changePassword};
+export const AuthServices = { registerFromShopify, loginUser, forgotPassword, resendOTP, verifyOTP, resetPassword ,refreshToken,changePassword, logoutUser};
