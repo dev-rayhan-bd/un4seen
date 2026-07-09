@@ -104,7 +104,36 @@ const createMessageInDB = async (payload: any) => {
   const newMessage = await Message.create({ channel, sender, text, file });
   await Channel.findByIdAndUpdate(channel, { lastMessage: newMessage._id });
 
-  return await newMessage.populate('sender', 'firstName lastName image memberNumber');
+  const populated = await newMessage.populate('sender', 'firstName lastName image memberNumber');
+
+  // --- Push Notification ---
+  try {
+    const senderUser = await UserModel.findById(sender).select('firstName lastName');
+    const senderName = senderUser ? `${senderUser.firstName} ${senderUser.lastName}` : 'Someone';
+
+    if (type === 'private' && to) {
+      // Private message: notify the recipient
+      const msgText = text || 'Sent a photo';
+      await sendNotification(to, senderName, msgText, 'message');
+    } else if (type === 'group') {
+      // Group message: notify all members except sender
+      const channelDoc = await Channel.findById(channel).select('members name');
+      if (channelDoc) {
+        const msgText = text || 'Sent a photo';
+        const groupName = channelDoc.name || 'Group';
+        const recipients = channelDoc.members.filter(
+          (m: any) => m.toString() !== sender.toString()
+        );
+        for (const memberId of recipients) {
+          await sendNotification(memberId.toString(), groupName, `${senderName}: ${msgText}`, 'message');
+        }
+      }
+    }
+  } catch (notifError) {
+    console.error('Failed to send push notification:', notifError);
+  }
+
+  return populated;
 };
 
 const getMessagesFromDB = async (channelId: string, query: Record<string, unknown>) => {
