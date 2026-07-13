@@ -60,7 +60,7 @@ const forgotPassword = async (email: string) => {
   if (!user) throw new AppError(404, "User not found");
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expireDate = new Date(Date.now() + 10 * 60 * 1000); 
+  const expireDate = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
   await UserModel.findByIdAndUpdate(user._id, {
     verificationCode: otp,
@@ -70,7 +70,7 @@ const forgotPassword = async (email: string) => {
   const html = getEmailTemplate({
     userName: user.firstName,
     title: "RESET YOUR PASSWORD",
-    body: `Use the code below to reset your password. This code will expire in 10 minutes.`,
+    body: `Use the code below to reset your password. This code will expire in 2 minutes.`,
     otpCode: otp
   });
 
@@ -140,7 +140,7 @@ const resendOTP = async (email: string) => {
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expireDate = new Date(Date.now() + 5 * 60 * 1000); //5 minutes
+  const expireDate = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
   await UserModel.findByIdAndUpdate(user._id, {
     verificationCode: otp,
@@ -150,7 +150,7 @@ const resendOTP = async (email: string) => {
   const html = getEmailTemplate({
     userName: user.firstName,
     title: "NEW OTP REQUESTED",
-    body: `You requested a new verification code. Use the OTP below to proceed. This code expires in 10 minutes.`,
+    body: `You requested a new verification code. Use the OTP below to proceed. This code expires in 2 minutes.`,
     otpCode: otp
   });
 

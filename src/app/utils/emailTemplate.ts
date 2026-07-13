@@ -24,7 +24,7 @@ export const getEmailTemplate = ({
         .logo { width: 180px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3)); }
         .content { padding: 40px 30px; text-align: center; }
         .content h1 { color: #fff; font-size: 26px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
-        .content p { color: #aaa; font-size: 16px; line-height: 1.6; }
+        .content p { color: #fff; font-size: 16px; line-height: 1.6; }
         .otp-badge { display: inline-block; background: #222; border: 2px solid #00A3FF; color: #fff; font-size: 32px; font-weight: bold; padding: 15px 30px; border-radius: 8px; letter-spacing: 10px; margin: 30px 0; }
         .btn { display: inline-block; background: #00A3FF; color: #fff !important; text-decoration: none; padding: 16px 32px; border-radius: 6px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-top: 25px; }
         .footer { padding: 30px; text-align: center; font-size: 12px; color: #444; border-top: 1px solid #222; }
