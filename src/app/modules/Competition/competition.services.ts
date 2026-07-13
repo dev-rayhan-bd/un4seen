@@ -44,6 +44,35 @@ const createCompetitionIntoDB = async (payload: TCompetition) => {
   const startDate = new Date(payload.startDate);
   const endDate = new Date(payload.endDate);
 
+  // Check: startDate cannot be before today
+  if (startDate < new Date(now.setHours(0, 0, 0, 0))) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Start date cannot be in the past. Please select a future date.'
+    );
+  }
+
+  // Check: date validation — startDate must be before endDate
+  if (startDate >= endDate) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'End date must be after start date.'
+    );
+  }
+
+  // Check: no overlapping active/upcoming competition exists
+  const overlappingCompetition = await Competition.findOne({
+    status: { $in: ['active', 'upcoming'] },
+    startDate: { $lt: endDate },
+    endDate: { $gt: startDate },
+  });
+
+  if (overlappingCompetition) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Another competition "${overlappingCompetition.title}" is already running/upcoming from ${new Date(overlappingCompetition.startDate).toLocaleDateString()} to ${new Date(overlappingCompetition.endDate).toLocaleDateString()}. Please choose a different date range.`
+    );
+  }
 
   if (now < startDate) {
     payload.status = 'upcoming'; 

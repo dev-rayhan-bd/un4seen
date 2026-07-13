@@ -391,7 +391,7 @@ const submitSocialProof = async (userId: string, payload: any) => {
 
 const getAllPendingSubmissions = async (query: Record<string, unknown>) => {
     const submissionQuery = new QueryBuilder(
-        SocialSubmission.find({ status: 'pending' }).populate('user', 'firstName lastName image memberNumber'),
+        SocialSubmission.find().populate('user', 'firstName lastName image memberNumber'),
         query
     ).filter().sort().paginate().fields();
 
