@@ -1,3 +1,5 @@
+process.env.TZ = 'Pacific/Auckland';
+
 import { Server } from 'http';
 
 import app from './app';
