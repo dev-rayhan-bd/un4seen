@@ -3,9 +3,17 @@ import axios from 'axios';
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import {   fetchAllProductsFromShopify, getSelectedProductsForApp, getShopifyProductsFromDB, saveAdminSelection, toggleAdminSelection } from './shopify.service';
-
-
+import AppError from '../../errors/AppError';
+import { UserModel } from '../User/user.model';
+import { sendNotification } from '../../utils/sendNotification';
+import {   
+  fetchAllProductsFromShopify, 
+  getMyOrdersFromShopify, 
+  getSelectedProductsForApp, 
+  getShopifyProductsFromDB, 
+  saveAdminSelection, 
+  toggleAdminSelection 
+} from './shopify.service';
 
 const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
   const { client_id, client_secret } = req.body;
@@ -41,6 +49,7 @@ const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+
 const getStoreProducts = catchAsync(async (req, res) => {
   const result = await getShopifyProductsFromDB(req.query);
 
@@ -51,12 +60,6 @@ const getStoreProducts = catchAsync(async (req, res) => {
     data: result,
   });
 });
-
-
-
-
-// ----------------------------test----------------------------------
-
 
 const selectProducts = catchAsync(async (req: Request, res: Response) => {
   const { productIds } = req.body; // Array of IDs
@@ -79,10 +82,7 @@ const getAppStoreFeed = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
-
 const getAllProducts = catchAsync(async (req: Request, res: Response) => {
-
   const result = await fetchAllProductsFromShopify(req.query);
   
   sendResponse(res, {
@@ -92,7 +92,6 @@ const getAllProducts = catchAsync(async (req: Request, res: Response) => {
     data: result
   });
 });
-
 
 const toggleProduct = catchAsync(async (req: Request, res: Response) => {
   const { productId } = req.body;
@@ -106,17 +105,104 @@ const toggleProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/**
+ * Controller to fetch authenticated user's Shopify orders.
+ */
+const getMyOrders = catchAsync(async (req: Request, res: Response) => {
+  const userId = (req.user as any)?.userId;
 
+  if (!userId) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'User is not authenticated.');
+  }
 
+  const user = await UserModel.findById(userId);
+
+  if (!user || !user.email) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User account or email address not found.');
+  }
+
+  const result = await getMyOrdersFromShopify(user.email, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User orders retrieved successfully from Shopify',
+    data: result,
+  });
+});
+
+/**
+ * Unified Public Webhook Handler for Shopify order & fulfillment topics.
+ * Handles topics: orders/create, fulfillments/create, fulfillments/update, orders/cancelled.
+ */
+const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
+  const topicHeader = req.headers['x-shopify-topic'];
+  const topic = Array.isArray(topicHeader) ? topicHeader[0] : topicHeader;
+
+  const payload = req.body;
+  const email = payload?.email || payload?.customer?.email || payload?.order?.email;
+  const rawOrderNumber = payload?.name || (payload?.order_number ? `#${payload.order_number}` : payload?.number ? `#${payload.number}` : '');
+  const orderNumber = rawOrderNumber ? (rawOrderNumber.startsWith('#') ? rawOrderNumber : `#${rawOrderNumber}`) : 'N/A';
+
+  if (email && topic) {
+    const user = await UserModel.findOne({ email });
+
+    if (user) {
+      const userId = user._id.toString();
+
+      switch (topic) {
+        case 'orders/create':
+          await sendNotification(
+            userId,
+            'Order Confirmed! 🏁',
+            `We received your order ${orderNumber}.`,
+            'order'
+          );
+          break;
+
+        case 'fulfillments/create':
+        case 'fulfillments/update':
+          await sendNotification(
+            userId,
+            'Order Shipped! 🚚',
+            `Your order ${orderNumber} is on its way.`,
+            'order'
+          );
+          break;
+
+        case 'orders/cancelled':
+          await sendNotification(
+            userId,
+            'Order Cancelled ⚠️',
+            `Your order ${orderNumber} has been cancelled.`,
+            'order'
+          );
+          break;
+
+        default:
+          console.log(`Unhandled Shopify Webhook Topic: ${topic}`);
+          break;
+      }
+    } else {
+      console.log(`User with email ${email} not found for Shopify Webhook topic ${topic}`);
+    }
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Shopify Webhook received and processed successfully',
+    data: null,
+  });
+});
 
 export const ShopifyControllers = {
   generateAdminToken,
   getStoreProducts,
-  // -----test-------------
-
   selectProducts,
   getAppStoreFeed,
   getAllProducts,
-  toggleProduct
-
+  toggleProduct,
+  getMyOrders,
+  handleShopifyWebhook,
 };

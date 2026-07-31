@@ -22,7 +22,19 @@ router.get('/all-products', auth('admin', 'superAdmin'), ShopifyControllers.getA
 
 
 router.post('/select-products', auth('admin', 'superAdmin'), ShopifyControllers.selectProducts);
-
 router.post('/toggle-selection', auth('admin', 'superAdmin'), ShopifyControllers.toggleProduct);
 router.get('/app-store', ShopifyControllers.getAppStoreFeed);
+
+// --- Shopify Order Tracking & Webhook Routes ---
+router.get(
+  '/my-orders',
+  auth(USER_ROLE.member, USER_ROLE.admin),
+  ShopifyControllers.getMyOrders
+);
+
+router.post(
+  '/webhook/order-update',
+  ShopifyControllers.handleShopifyWebhook
+);
+
 export const ShopifyRoutes = router;

@@ -26,7 +26,7 @@ export const getShopifyAccessToken = async () => {
 
 
 
-const getValidShopifyToken = async () => {
+export const getValidShopifyToken = async () => {
   let tokenData = await ShopifyToken.findOne().sort({ createdAt: -1 });
   const now = new Date();
 
@@ -336,6 +336,111 @@ export const toggleAdminSelection = async (productId: string) => {
       {},
       { $addToSet: { selectedProductIds: productId } },
       { new: true }
+    );
+  }
+};
+
+/**
+ * Fetch user orders from Shopify Admin API by user email and map data for mobile app with pagination.
+ */
+export const getMyOrdersFromShopify = async (email: string, query: Record<string, unknown> = {}) => {
+  if (!email) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Email is required to fetch orders.');
+  }
+
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+
+  const accessToken = await getValidShopifyToken();
+  const storeName = process.env.SHOPIFY_STORE_NAME || 'un4seen';
+  const shopifyOrdersUrl = `https://${storeName}.myshopify.com/admin/api/2024-04/orders.json?email=${encodeURIComponent(email)}&status=any`;
+
+  try {
+    const response = await axios.get(shopifyOrdersUrl, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+      },
+    });
+
+    const orders = response.data?.orders || [];
+
+    const mappedOrders = orders.map((order: any) => {
+      const fulfillments = order.fulfillments || [];
+      const firstFulfillment = fulfillments.length > 0 ? fulfillments[0] : null;
+
+      // Extract tracking info cleanly from fulfillments[0]
+      const trackingInfo = {
+        number: firstFulfillment?.tracking_number || (firstFulfillment?.tracking_numbers && firstFulfillment.tracking_numbers[0]) || '',
+        url: firstFulfillment?.tracking_url || (firstFulfillment?.tracking_urls && firstFulfillment.tracking_urls[0]) || '',
+        company: firstFulfillment?.tracking_company || '',
+      };
+
+      // Map line items
+      const items = (order.line_items || []).map((item: any) => ({
+        title: item.title || '',
+        quantity: item.quantity || 0,
+        price: item.price || '0.00',
+      }));
+
+      // Timeline Logic:
+      // 1: Order Placed (Default)
+      // 2: Payment Confirmed (if financial_status === 'paid')
+      // 3: Shipped (if fulfillment_status === 'fulfilled')
+      // 4: Delivered (based on tracking info / shipment_status if available)
+      const financialStatus = order.financial_status || '';
+      const fulfillmentStatus = order.fulfillment_status || 'unfulfilled';
+      const shipmentStatus = firstFulfillment?.shipment_status || '';
+
+      let currentStep = 1;
+      let orderStatus = 'Order Placed';
+
+      if (shipmentStatus === 'delivered' || fulfillmentStatus === 'delivered') {
+        currentStep = 4;
+        orderStatus = 'Delivered';
+      } else if (fulfillmentStatus === 'fulfilled' || (firstFulfillment && firstFulfillment.tracking_number)) {
+        currentStep = 3;
+        orderStatus = 'Shipped';
+      } else if (financialStatus === 'paid') {
+        currentStep = 2;
+        orderStatus = 'In Progress';
+      } else {
+        currentStep = 1;
+        orderStatus = 'Order Placed';
+      }
+
+      return {
+        id: order.id,
+        orderNumber: order.name || `#${order.order_number}`,
+        totalPrice: order.total_price || '0.00',
+        currency: order.currency || 'NZD',
+        date: order.created_at,
+        orderStatus,
+        paymentStatus: financialStatus,
+        fulfillmentStatus: fulfillmentStatus,
+        trackingInfo,
+        items,
+        currentStep,
+      };
+    });
+
+    const total = mappedOrders.length;
+    const skip = (page - 1) * limit;
+    const paginatedOrders = mappedOrders.slice(skip, skip + limit);
+
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit) || 1,
+      },
+      result: paginatedOrders,
+    };
+  } catch (error: any) {
+    console.error('❌ Error fetching Shopify orders:', error.response?.data || error.message);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch user orders from Shopify.'
     );
   }
 };
