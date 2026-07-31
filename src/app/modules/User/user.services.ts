@@ -201,6 +201,10 @@ const getHomePageDataFromDB = async (userId: string) => {
   const now = new Date();
   const startOfWeek = moment().startOf('isoWeek').toDate();
 
+  await Giveaway.updateMany(
+    { status: 'pending', endDate: { $lt: now } },
+    { $set: { status: 'completed' } }
+  );
 
   const user = await UserModel.findById(userId).select('firstName lastName fullName image memberNumber status');
 
@@ -216,11 +220,12 @@ const getHomePageDataFromDB = async (userId: string) => {
   const bikeOfTheWeek = await Ride.findOne({ isBikeOfTheWeek: true })
     .populate('user', 'firstName lastName image memberNumber country');
 
-  // major giveaway
+  // major giveaway (current active or earliest upcoming)
   const majorGiveaway = await Giveaway.findOne({ 
     isMajorGiveaway: true, 
-    status: 'pending' 
-  }).sort({ endDate: 1 });
+    status: 'pending',
+    endDate: { $gte: now }
+  }).sort({ startDate: 1, endDate: 1 });
 
   //recent winner
   const recentWinners = await Giveaway.find({ status: 'completed', winner: { $exists: true } })

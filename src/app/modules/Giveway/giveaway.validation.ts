@@ -7,8 +7,8 @@ const createGiveawayValidationSchema = z.object({
     prizeDescription: z.string(),
     image: z.string().optional(),
     valueInNzd: z.number(),
-     startDate: z.string().datetime(), 
-    endDate: z.string().datetime(), 
+    startDate: z.string(),
+    endDate: z.string(),
     isMajorGiveaway: z.boolean().optional(),
   }),
 });
