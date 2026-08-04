@@ -163,6 +163,20 @@ const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const blockUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { durationHours } = req.body; 
+
+  const result = await UserServices.blockUserInDB(id, durationHours || 24);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `User has been blocked for ${durationHours || 24} hours successfully`,
+    data: result,
+  });
+});
+
 export const UserControllers = {
   getMyProfile,
   updateProfile,
@@ -174,5 +188,5 @@ export const UserControllers = {
   getMyFollowers,
   getMyFollowing,
   getHomePageData,
-  getAllMembers,updateUserStatus
+  getAllMembers,updateUserStatus, blockUser
 };

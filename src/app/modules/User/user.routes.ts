@@ -36,6 +36,11 @@ router.patch(
   auth(USER_ROLE.admin, USER_ROLE.superAdmin),
   UserControllers.updateUserStatus
 );
+router.patch(
+  '/block/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  UserControllers.blockUser
+);
 router.get(
   '/my-following', 
   auth(USER_ROLE.member, USER_ROLE.admin), 

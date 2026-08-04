@@ -301,10 +301,20 @@ const updateUserStatusInDB = async (id: string, status: string) => {
   return result;
 };
 
+const blockUserInDB = async (id: string, durationHours: number = 24) => {
+  const user = await UserModel.findById(id);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
 
-
-
-
+  const blockedUntil = new Date(Date.now() + durationHours * 60 * 60 * 1000);
+  const result = await UserModel.findByIdAndUpdate(
+    id,
+    { status: 'blocked', blockedUntil },
+    { new: true }
+  );
+  return result;
+};
 
 export const UserServices = {
   getMyProfileFromDB,
@@ -316,5 +326,6 @@ getCompleteProfileData,
   getFollowingListFromDB,
   getHomePageDataFromDB,
   getAllUsersFromDB,
-  updateUserStatusInDB
+  updateUserStatusInDB,
+  blockUserInDB
 };

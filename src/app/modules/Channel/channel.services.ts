@@ -410,7 +410,7 @@ const getAllReportsFromDB = async (query: Record<string, unknown>) => {
 
     violationContent: report.message?.text 
       ? report.message.text 
-      : (report.message?.file ? "Shared an attachment (File/Image)" : "Message content unavailable"),
+      : (report.message?.file ? report.message.file : "Message content unavailable"),
       
 
     reporterComment: report.details || "No specific comment provided by reporter",

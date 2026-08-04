@@ -11,7 +11,8 @@ const userSchema = new Schema<TUser, UserModelStatic>({
     fcmToken: { type: String },
   memberNumber: { type: String, unique: true }, // e.g., #0001
   role: { type: String, enum: ['superAdmin', 'admin', 'member', 'guest'], default: 'member' },
-  status: { type: String, enum: ['active', 'inactive'], default: 'inactive' },
+  status: { type: String, enum: ['active', 'inactive', 'blocked'], default: 'inactive' },
+  blockedUntil: { type: Date },
   image: { type: String },
   aboutMe: { type: String, default: '' },
     facebookURL: { type: String, default: '' },

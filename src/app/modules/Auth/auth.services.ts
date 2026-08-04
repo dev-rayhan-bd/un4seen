@@ -112,8 +112,16 @@ const logoutUser = async (userId: string) => {
 
 const loginUser = async (payload: any) => {
   const user = await UserModel.isUserExistsByEmail(payload.email);
-  if (!user || user.isDeleted || user.status === 'blocked') {
+  if (!user || user.isDeleted) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found or account is blocked');
+  }
+
+  if (user.status === 'blocked') {
+    if (user.blockedUntil && new Date() > user.blockedUntil) {
+      await UserModel.findByIdAndUpdate(user._id, { status: 'active', $unset: { blockedUntil: 1 } });
+    } else {
+      throw new AppError(httpStatus.FORBIDDEN, 'Your account is blocked');
+    }
   }
 
   const isPasswordMatched = await UserModel.isPasswordMatched(payload.password, user.password!);
@@ -171,8 +179,16 @@ const refreshToken = async (token: string) => {
 
 
   const user = await UserModel.findById(userId);
-  if (!user || user.status === 'blocked' || user.isDeleted) {
+  if (!user || user.isDeleted) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found or blocked!');
+  }
+
+  if (user.status === 'blocked') {
+    if (user.blockedUntil && new Date() > user.blockedUntil) {
+      await UserModel.findByIdAndUpdate(user._id, { status: 'active', $unset: { blockedUntil: 1 } });
+    } else {
+      throw new AppError(httpStatus.FORBIDDEN, 'Your account is blocked!');
+    }
   }
 
 

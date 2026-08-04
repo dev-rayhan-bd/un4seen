@@ -22,6 +22,7 @@ export type TUser = {
   memberNumber?: string; // e.g: #0001
   role: 'superAdmin'|'admin' | 'member' | 'guest';
   status: 'active' | 'inactive' | 'blocked';
+  blockedUntil?: Date;
   referralCode: string;
   referredBy?: Types.ObjectId | TUser; 
   referrals: Types.ObjectId[];      

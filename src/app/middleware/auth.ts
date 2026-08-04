@@ -36,6 +36,15 @@ const auth = (...requiredRoles: TUserRole[]) => {
       throw new AppError(httpStatus.NOT_FOUND, 'This user is not found !');
     }
 
+    if (user.status === 'blocked') {
+      if (user.blockedUntil && new Date() > user.blockedUntil) {
+        // Time expired, unblock user
+        await UserModel.findByIdAndUpdate(user._id, { status: 'active', $unset: { blockedUntil: 1 } });
+      } else {
+        throw new AppError(httpStatus.FORBIDDEN, 'Your account is blocked!');
+      }
+    }
+
     if (requiredRoles && !requiredRoles.includes(role)) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized !');
     }
