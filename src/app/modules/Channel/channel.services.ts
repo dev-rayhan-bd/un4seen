@@ -408,9 +408,8 @@ const getAllReportsFromDB = async (query: Record<string, unknown>) => {
     reportedUser: report.message?.sender || null, // UI: Reported User Section
 
 
-    violationContent: report.message?.text 
-      ? report.message.text 
-      : (report.message?.file ? report.message.file : "Message content unavailable"),
+    violationContent: report.message?.text || "Message content unavailable",
+    file: report.message?.file || null,
       
 
     reporterComment: report.details || "No specific comment provided by reporter",
