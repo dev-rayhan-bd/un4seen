@@ -167,7 +167,7 @@ const blockUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { durationHours } = req.body; 
 
-  const result = await UserServices.blockUserInDB(id, durationHours || 24);
+  const result = await UserServices.blockUserInDB(id as string, durationHours || 24);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
