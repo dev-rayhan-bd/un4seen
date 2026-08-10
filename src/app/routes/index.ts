@@ -34,6 +34,8 @@ import { AdminRoutes } from '../modules/Admin/admin.routes';
 
 
 
+import { MotivationalQuoteRoutes } from '../modules/MotivationalQuote/motivationalQuote.routes';
+
 const router = Router();
 
 const moduleRoutes = [
@@ -141,6 +143,10 @@ const moduleRoutes = [
   {
     path: '/admin',
     route: AdminRoutes,
+  },
+  {
+    path: '/motivational-quotes',
+    route: MotivationalQuoteRoutes,
   },
 ];
 
