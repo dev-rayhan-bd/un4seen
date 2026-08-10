@@ -13,6 +13,18 @@ const testRiderApplicationSchema = new Schema<TTestRiderApplication>(
       required: true,
       trim: true 
     },
+    number: {
+      type: String,
+      required: true,
+    },
+    age: {
+      type: Number,
+      required: true,
+    },
+    bikeType: {
+      type: String,
+      required: true,
+    },
     status: { 
       type: String, 
       enum: ['pending', 'reviewed', 'accepted', 'rejected'], 

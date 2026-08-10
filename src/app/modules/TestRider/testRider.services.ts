@@ -3,7 +3,7 @@ import AppError from '../../errors/AppError';
 import { TestRiderApplication } from './testRider.model';
 import { sendNotification } from '../../utils/sendNotification';
 
-const applyForTestRider = async (userId: string, applicationText: string) => {
+const applyForTestRider = async (userId: string, payload: { applicationText: string; number: string; age: number; bikeType: string; }) => {
 
   const alreadyApplied = await TestRiderApplication.findOne({ user: userId });
   if (alreadyApplied) {
@@ -12,7 +12,10 @@ const applyForTestRider = async (userId: string, applicationText: string) => {
 
   const result = await TestRiderApplication.create({
     user: userId,
-    applicationText,
+    applicationText: payload.applicationText,
+    number: payload.number,
+    age: payload.age,
+    bikeType: payload.bikeType,
   });
   return result;
 };

@@ -4,7 +4,7 @@ import { TestRiderServices } from "./testRider.services";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
 const submitApplication = catchAsync(async (req: Request, res: Response) => {
-  const result = await TestRiderServices.applyForTestRider(req.user.userId, req.body.applicationText);
+  const result = await TestRiderServices.applyForTestRider(req.user.userId, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
