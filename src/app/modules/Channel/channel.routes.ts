@@ -43,6 +43,18 @@ router.patch(
   auth(USER_ROLE.admin, USER_ROLE.superAdmin), 
   ChannelControllers.resolveReport
 );
+
+router.get(
+  '/admin/pending-channels',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  ChannelControllers.getPendingChannels
+);
+
+router.patch(
+  '/admin/review-channel/:id',
+  auth(USER_ROLE.admin, USER_ROLE.superAdmin),
+  ChannelControllers.reviewChannel
+);
 router.post(
   '/upload-file',
   auth(USER_ROLE.member, USER_ROLE.admin),

@@ -23,7 +23,7 @@ const getOrCreatePrivateChatInDB = async (userId: string, targetId: string) => {
   return chat;
 };
 
-const createGroupInDB = async (userId: string, payload: any) => {
+const createGroupInDB = async (userId: string, payload: any, role: string) => {
 
   const memberList = [new Types.ObjectId(userId)]; 
   
@@ -33,6 +33,7 @@ const createGroupInDB = async (userId: string, payload: any) => {
     });
   }
 
+  const approvalStatus = (role === 'admin' || role === 'superAdmin') ? 'approved' : 'pending';
 
   const result = await Channel.create({
     name: payload.name,
@@ -42,6 +43,7 @@ const createGroupInDB = async (userId: string, payload: any) => {
     creator: userId,
     admins: [new Types.ObjectId(userId)],
     members: memberList,
+    approvalStatus,
   });
 
   return result;
@@ -158,7 +160,8 @@ const getMessagesFromDB = async (channelId: string, query: Record<string, unknow
 const getMyJoinedChannelsFromDB = async (userId: string) => {
   const allChannels = await Channel.find({ 
     members: userId, 
-    isDeleted: false 
+    isDeleted: false,
+    approvalStatus: 'approved'
   }).populate('members', 'firstName lastName image isOnline memberNumber');
 
   const groups: any[] = [];
@@ -200,7 +203,8 @@ const searchAllChannelsFromDB = async (userId: string, searchTerm: string) => {
   const channels = await Channel.find({
     name: { $regex: searchTerm, $options: 'i' },
     type: 'group',
-    isDeleted: false
+    isDeleted: false,
+    approvalStatus: 'approved'
   }).populate('members', 'status');
 
 
@@ -425,6 +429,44 @@ const getAllReportsFromDB = async (query: Record<string, unknown>) => {
 const resolveReportInDB = async (id: string) => {
   return await MessageReport.findByIdAndUpdate(id, { status: 'resolved' }, { new: true });
 };
+const getAdminChannelsFromDB = async (query: Record<string, unknown>) => {
+  const channelQuery = new QueryBuilder(
+    Channel.find({ type: 'group', isDeleted: false }).populate('creator', 'firstName lastName email image'),
+    query
+  )
+    .filter()
+    .sort()
+    .paginate();
+
+  const result = await channelQuery.modelQuery;
+  const meta = await channelQuery.countTotal();
+
+  return { meta, result };
+};
+
+const reviewChannelInDB = async (channelId: string, status: 'approved' | 'rejected') => {
+  const channel = await Channel.findById(channelId);
+  if (!channel) throw new AppError(httpStatus.NOT_FOUND, 'Channel not found');
+
+  channel.approvalStatus = status;
+  await channel.save();
+
+  if (channel.creator) {
+    const message = status === 'approved' 
+      ? `Your channel "${channel.name}" has been approved and is now live!` 
+      : `Your channel "${channel.name}" was not approved by the admin.`;
+      
+    await sendNotification(
+      channel.creator.toString(),
+      status === 'approved' ? 'Channel Approved! 🎉' : 'Channel Update',
+      message,
+      'general'
+    );
+  }
+
+  return channel;
+};
+
 export const ChannelServices = { 
   getOrCreatePrivateChatInDB, 
   createGroupInDB, 
@@ -434,6 +476,6 @@ export const ChannelServices = {
   createMessageInDB,
   searchAllChannelsFromDB,
   sendJoinRequestInDB,getMyJoinedChannelsFromDB,
-  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB,toggleMemberInChannelInDB,getAllReportsFromDB,resolveReportInDB
-
+  getChannelRequestsFromDB,handleJoinRequestInDB,searchRidersFromDB,getPrivateChatHistoryFromDB,getChannelMembersFromDB,toggleMemberInChannelInDB,getAllReportsFromDB,resolveReportInDB,
+  getAdminChannelsFromDB, reviewChannelInDB
 };

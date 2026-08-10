@@ -12,8 +12,8 @@ const startPrivateChat = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createGroup = catchAsync(async (req: Request, res: Response) => {
-  const result = await ChannelServices.createGroupInDB(req.user.userId, req.body);
-  sendResponse(res, { statusCode: httpStatus.CREATED, success: true, message: 'Group created', data: result });
+  const result = await ChannelServices.createGroupInDB(req.user.userId, req.body, req.user.role);
+  sendResponse(res, { statusCode: httpStatus.CREATED, success: true, message: 'Group created. ' + (result.approvalStatus === 'pending' ? 'Pending admin approval.' : ''), data: result });
 });
 
 const getMyChats = catchAsync(async (req: Request, res: Response) => {
@@ -155,6 +155,18 @@ const resolveReport = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const getAdminChannels = catchAsync(async (req: Request, res: Response) => {
+  const result = await ChannelServices.getAdminChannelsFromDB(req.query);
+  sendResponse(res, { statusCode: 200, success: true, message: 'Channels retrieved successfully', data: result });
+});
+
+const reviewChannel = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body; // 'approved' | 'rejected'
+  const result = await ChannelServices.reviewChannelInDB(id as string, status);
+  sendResponse(res, { statusCode: 200, success: true, message: `Channel ${status} successfully`, data: result });
+});
 export const ChannelControllers = { 
   startPrivateChat, 
   createGroup, 
@@ -170,6 +182,6 @@ export const ChannelControllers = {
   getPrivateHistory,
   getChannelMembers,
   manageMembers,
-  getReports,resolveReport
-  
+  getReports,resolveReport,
+  getPendingChannels: getAdminChannels, reviewChannel
 };

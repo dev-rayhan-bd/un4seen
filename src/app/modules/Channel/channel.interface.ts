@@ -10,7 +10,8 @@ export type TChannel = {
   admins: Types.ObjectId[];
   lastMessage?: Types.ObjectId;
   isDeleted: boolean;
-    isPrivate: boolean;
+  isPrivate: boolean;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
   createdAt:Date;
   updatedAt:Date;
 };

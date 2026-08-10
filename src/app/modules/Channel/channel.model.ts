@@ -11,6 +11,7 @@ const channelSchema = new Schema<TChannel>({
   admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   lastMessage: { type: Schema.Types.ObjectId, ref: 'Message' },
   isDeleted: { type: Boolean, default: false },
+  approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 }, { timestamps: true });
 
 const messageSchema = new Schema<TMessage>({
