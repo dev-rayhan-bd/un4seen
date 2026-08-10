@@ -51,5 +51,11 @@ router.patch(
     PointControllers.adminReview
 );
 
+router.patch(
+    '/admin/update-user-points/:id',
+    auth('admin', 'superAdmin'),
+    PointControllers.adminUpdateUserPoints
+);
+
 router.get('/my-codes', auth('member', 'admin'), PointControllers.getMyRedeemedCodes);
 export const PointRoutes = router;

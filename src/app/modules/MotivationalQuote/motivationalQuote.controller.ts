@@ -52,7 +52,7 @@ const getTodayQuote = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getQuoteById = catchAsync(async (req: Request, res: Response) => {
-  const result = await MotivationalQuoteServices.getQuoteByIdFromDB(req.params.id);
+  const result = await MotivationalQuoteServices.getQuoteByIdFromDB(req.params.id as string);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -63,7 +63,7 @@ const getQuoteById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateQuote = catchAsync(async (req: Request, res: Response) => {
-  const result = await MotivationalQuoteServices.updateQuoteInDB(req.params.id, req.body);
+  const result = await MotivationalQuoteServices.updateQuoteInDB(req.params.id as string, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -74,7 +74,7 @@ const updateQuote = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteQuote = catchAsync(async (req: Request, res: Response) => {
-  const result = await MotivationalQuoteServices.deleteQuoteFromDB(req.params.id);
+  const result = await MotivationalQuoteServices.deleteQuoteFromDB(req.params.id as string);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

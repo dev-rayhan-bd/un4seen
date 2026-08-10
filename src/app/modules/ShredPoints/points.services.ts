@@ -429,6 +429,55 @@ const reviewSubmission = async (submissionId: string, status: 'approved' | 'reje
     return submission;
 };
 
+const adminUpdateUserPoints = async (userId: string, payload: { action: 'add' | 'deduct' | 'set'; points: number; description?: string }) => {
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const { action, points, description } = payload;
+  let pointDiff = 0;
+
+  if (action === 'add') {
+    pointDiff = points;
+    user.shredPoints = (user.shredPoints || 0) + points;
+  } else if (action === 'deduct') {
+    pointDiff = -points;
+    user.shredPoints = (user.shredPoints || 0) - points;
+  } else if (action === 'set') {
+    pointDiff = points - (user.shredPoints || 0);
+    user.shredPoints = points;
+  } else {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid action. Must be add, deduct, or set');
+  }
+
+  if (user.shredPoints < 0) {
+    user.shredPoints = 0;
+  }
+
+  await user.save();
+
+  const finalDesc = description || `Admin ${action}ed points manually`;
+
+  if (pointDiff !== 0) {
+    await PointTransaction.create({
+      user: userId,
+      points: pointDiff,
+      source: 'admin_adjustment',
+      description: finalDesc,
+    });
+
+    await sendNotification(
+      userId,
+      'Points Updated ⚡',
+      `Your points have been updated by admin. New balance: ${user.shredPoints}.`,
+      'general'
+    );
+  }
+
+  return { newBalance: user.shredPoints, pointDiff };
+};
+
 const getMyRedeemedCodesFromDB = async (userId: string) => {
   const result = await PointTransaction.find({ 
     user: userId, 
@@ -455,5 +504,6 @@ export const PointServices = {
     submitSocialProof,
     getAllPendingSubmissions,
     reviewSubmission,
-    getMyRedeemedCodesFromDB
+    getMyRedeemedCodesFromDB,
+    adminUpdateUserPoints
 };

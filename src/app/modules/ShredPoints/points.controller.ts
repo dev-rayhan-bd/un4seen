@@ -145,7 +145,27 @@ const getPendingSubmissions = catchAsync(async (req: Request, res: Response) => 
     });
 });
 
+const adminUpdateUserPoints = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params; // userId
+    const { action, points, description } = req.body;
+    
+    if (!['add', 'deduct', 'set'].includes(action)) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Invalid action. Must be 'add', 'deduct', or 'set'");
+    }
+    
+    if (typeof points !== 'number' || points < 0) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Points must be a positive number");
+    }
 
+    const result = await PointServices.adminUpdateUserPoints(id as string, { action, points, description });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `User points successfully ${action}ed`,
+        data: result,
+    });
+});
 
 const getMyRedeemedCodes = catchAsync(async (req, res) => {
   const result = await PointServices.getMyRedeemedCodesFromDB(req.user.userId);
@@ -158,4 +178,4 @@ const getMyRedeemedCodes = catchAsync(async (req, res) => {
 });
 
 
-export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats, submitProof, adminReview, getPendingSubmissions,getMyRedeemedCodes};
+export const PointControllers = { claimDaily, redeem, socialShare, getMyHistory, getDashboard, claimMilestone, claimProfileBonus ,applyReferral, getReferralStats, submitProof, adminReview, getPendingSubmissions,getMyRedeemedCodes, adminUpdateUserPoints };
