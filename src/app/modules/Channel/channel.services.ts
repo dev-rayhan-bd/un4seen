@@ -50,7 +50,11 @@ const createGroupInDB = async (userId: string, payload: any, role: string) => {
 };
 
 const getMyChatListFromDB = async (userId: string) => {
-  const chats = await Channel.find({ members: userId, isDeleted: false })
+  const chats = await Channel.find({ 
+    members: userId, 
+    isDeleted: false,
+    $or: [{ approvalStatus: 'approved' }, { type: 'private' }, { approvalStatus: { $exists: false } }]
+  })
     .populate('members', 'firstName lastName image status')
     .populate('lastMessage')
     .sort('-updatedAt');
@@ -103,6 +107,14 @@ const createMessageInDB = async (payload: any) => {
     channel = chat._id;
   }
 
+  if (channel) {
+    const channelDoc = await Channel.findById(channel);
+    if (!channelDoc) throw new AppError(404, "Channel not found");
+    if (channelDoc.type === 'group' && channelDoc.approvalStatus !== 'approved' && channelDoc.approvalStatus !== undefined) {
+      throw new AppError(403, "Cannot send message to an unapproved group");
+    }
+  }
+
   const newMessage = await Message.create({ channel, sender, text, file });
   await Channel.findByIdAndUpdate(channel, { lastMessage: newMessage._id });
 
@@ -141,6 +153,12 @@ const createMessageInDB = async (payload: any) => {
 const getMessagesFromDB = async (channelId: string, query: Record<string, unknown>) => {
 
   const channelObjectId = new Types.ObjectId(channelId);
+  const channelDoc = await Channel.findById(channelObjectId);
+  
+  if (!channelDoc) throw new AppError(404, "Channel not found");
+  if (channelDoc.type === 'group' && channelDoc.approvalStatus !== 'approved' && channelDoc.approvalStatus !== undefined) {
+    throw new AppError(403, "Cannot view messages of an unapproved group");
+  }
 
   const messageQuery = new QueryBuilder(
 
@@ -161,7 +179,7 @@ const getMyJoinedChannelsFromDB = async (userId: string) => {
   const allChannels = await Channel.find({ 
     members: userId, 
     isDeleted: false,
-    approvalStatus: 'approved'
+    $or: [{ approvalStatus: 'approved' }, { type: 'private' }, { approvalStatus: { $exists: false } }]
   }).populate('members', 'firstName lastName image isOnline memberNumber');
 
   const groups: any[] = [];
@@ -204,7 +222,7 @@ const searchAllChannelsFromDB = async (userId: string, searchTerm: string) => {
     name: { $regex: searchTerm, $options: 'i' },
     type: 'group',
     isDeleted: false,
-    approvalStatus: 'approved'
+    $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }]
   }).populate('members', 'status');
 
 
@@ -231,6 +249,10 @@ const searchAllChannelsFromDB = async (userId: string, searchTerm: string) => {
 const sendJoinRequestInDB = async (userId: string, channelId: string) => {
 
     const channel = await Channel.findById(channelId);
+    if (!channel) throw new AppError(404, "Channel not found");
+    if (channel.type === 'group' && channel.approvalStatus !== 'approved' && channel.approvalStatus !== undefined) {
+      throw new AppError(403, "Cannot join an unapproved group");
+    }
     if (channel?.members.includes(userId as any)) throw new AppError(400, "Already a member");
 
     return await JoinRequest.create({ user: userId, channel: channelId });
@@ -319,6 +341,9 @@ const getChannelMembersFromDB = async (channelId: string) => {
   if (!channel) {
     throw new AppError(httpStatus.NOT_FOUND, 'Channel not found');
   }
+  if (channel.type === 'group' && channel.approvalStatus !== 'approved' && channel.approvalStatus !== undefined) {
+    throw new AppError(403, "Cannot view members of an unapproved group");
+  }
 
 
   const membersWithAdminStatus = channel.members.map((member: any) => {
@@ -341,6 +366,9 @@ const toggleMemberInChannelInDB = async (
   
   if (!channel) {
     throw new AppError(httpStatus.FORBIDDEN, "Only channel admins can manage members!");
+  }
+  if (channel.type === 'group' && channel.approvalStatus !== 'approved' && channel.approvalStatus !== undefined) {
+    throw new AppError(403, "Cannot manage members of an unapproved group");
   }
 
 
