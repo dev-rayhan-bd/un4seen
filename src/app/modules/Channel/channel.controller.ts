@@ -23,7 +23,7 @@ const getMyChats = catchAsync(async (req: Request, res: Response) => {
 
 const getMessages = catchAsync(async (req: Request, res: Response) => {
   const result = await ChannelServices.getMessagesFromDB(req.params.id as string, req.query);
-  sendResponse(res, { statusCode: httpStatus.OK, success: true, message: 'Messages retrieved',data: result });
+  sendResponse(res, { statusCode: httpStatus.OK, success: true, message: 'Messages retrieved', data: result });
 });
 
 const reportMessage = catchAsync(async (req: Request, res: Response) => {
@@ -48,9 +48,9 @@ const uploadAttachment = catchAsync(async (req: Request, res: Response) => {
 const searchChannels = catchAsync(async (req: Request, res: Response) => {
 
   const searchTerm = req.query.searchTerm ? String(req.query.searchTerm) : "";
-  
+
   const result = await ChannelServices.searchAllChannelsFromDB(
-    req.user.userId, 
+    req.user.userId,
     searchTerm
   );
 
@@ -89,10 +89,10 @@ const actionOnRequest = catchAsync(async (req, res) => {
 });
 const searchRiders = catchAsync(async (req: Request, res: Response) => {
 
-  const { searchTerm } = req.query; 
+  const { searchTerm } = req.query;
 
   const result = await ChannelServices.searchRidersFromDB(
-    searchTerm as string, 
+    searchTerm as string,
     req.user.userId
   );
 
@@ -157,7 +157,16 @@ const resolveReport = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAdminChannels = catchAsync(async (req: Request, res: Response) => {
-  const result = await ChannelServices.getAdminChannelsFromDB(req.query);
+  const query = { ...req.query } as any;
+  if (query.status) {
+    if (query.status === 'pending') {
+      query.$or = [{ approvalStatus: 'pending' }, { approvalStatus: { $exists: false } }];
+    } else {
+      query.approvalStatus = query.status;
+    }
+    delete query.status;
+  }
+  const result = await ChannelServices.getAdminChannelsFromDB(query);
   sendResponse(res, { statusCode: 200, success: true, message: 'Channels retrieved successfully', data: result });
 });
 
@@ -167,21 +176,21 @@ const reviewChannel = catchAsync(async (req: Request, res: Response) => {
   const result = await ChannelServices.reviewChannelInDB(id as string, status);
   sendResponse(res, { statusCode: 200, success: true, message: `Channel ${status} successfully`, data: result });
 });
-export const ChannelControllers = { 
-  startPrivateChat, 
-  createGroup, 
-  getMyChats, 
+export const ChannelControllers = {
+  startPrivateChat,
+  createGroup,
+  getMyChats,
   getMessages,
-  reportMessage ,
+  reportMessage,
   uploadAttachment,
   searchChannels,
   requestToJoin,
   getMyJoinedChannels,
   getJoinRequests,
-  actionOnRequest,searchRiders,
+  actionOnRequest, searchRiders,
   getPrivateHistory,
   getChannelMembers,
   manageMembers,
-  getReports,resolveReport,
+  getReports, resolveReport,
   getPendingChannels: getAdminChannels, reviewChannel
 };

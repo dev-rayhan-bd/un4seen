@@ -14,7 +14,7 @@ const channelSchema = new Schema<TChannel>({
   approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 }, { timestamps: true });
 
-const messageSchema = new Schema<TMessage>({
+const messageSchema = new Schema<TMessage>({ 
   channel: { type: Schema.Types.ObjectId, ref: 'Channel', required: true },
   sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   text: { type: String },
