@@ -28,7 +28,7 @@ search(searchableFields: string[]) {
 filter() {
   const queryObj = { ...this.query };
   
-  const excludeFields = ['searchTerm', 'search', 'sort', 'limit', 'page', 'fields'];
+  const excludeFields = ['searchTerm', 'search', 'sort', 'limit', 'page', 'fields', 'startDate', 'endDate', 'currentWeek'];
   
   excludeFields.forEach((el) => delete queryObj[el]);
 

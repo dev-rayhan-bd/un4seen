@@ -218,6 +218,7 @@ const getHomePageDataFromDB = async (userId: string) => {
 
 
   const bikeOfTheWeek = await Ride.findOne({ isBikeOfTheWeek: true })
+    .sort({ updatedAt: -1 })
     .populate('user', 'firstName lastName image memberNumber country');
 
   // major giveaway (current active or earliest upcoming)

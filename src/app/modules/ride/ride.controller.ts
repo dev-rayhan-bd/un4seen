@@ -51,7 +51,7 @@ const submitVote = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getLeaderboard = catchAsync(async (req, res) => {
-  const result = await RideServices.getLeaderboardFromDB();
+  const result = await RideServices.getLeaderboardFromDB(req.query);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

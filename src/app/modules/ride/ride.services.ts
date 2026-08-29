@@ -1,3 +1,4 @@
+import moment from 'moment';
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import AppError from '../../errors/AppError';
@@ -7,38 +8,53 @@ import { PointServices } from '../ShredPoints/points.services';
 import { sendNotification } from '../../utils/sendNotification';
 import { TRide } from './ride.interface';
 
-// const createRideInDB = async (payload: Partial<TRide>) => {
-//   const result = await Ride.create(payload);
+const getDateFilterFromQuery = (query: Record<string, unknown>) => {
+  if (query.startDate && query.endDate) {
+    const start = moment(query.startDate as string).startOf('day').toDate();
+    const end = moment(query.endDate as string).endOf('day').toDate();
+    return { createdAt: { $gte: start, $lte: end } };
+  }
+  if (query.currentWeek === 'true') {
+    const startOfWeek = moment().startOf('isoWeek').toDate();
+    const endOfWeek = moment().endOf('isoWeek').toDate();
+    return { createdAt: { $gte: startOfWeek, $lte: endOfWeek } };
+  }
+  // Default: Return all rides (initial screen view)
+  return {};
+};
 
-//   await PointServices.addPoints(payload.user!.toString(), 'social_share' as any, 50);
-//   return result;
-// };
 const createRideInDB = async (payload: Partial<TRide>) => {
+  const { startOfWeek, endOfWeek } = { 
+    startOfWeek: moment().startOf('isoWeek').toDate(), 
+    endOfWeek: moment().endOf('isoWeek').toDate() 
+  };
 
   const existingRide = await Ride.findOne({ 
     user: payload.user, 
-    isDeleted: false 
+    isDeleted: false,
+    createdAt: { $gte: startOfWeek, $lte: endOfWeek }
   });
 
   if (existingRide) {
     throw new AppError(
       httpStatus.BAD_REQUEST, 
-      "You already have an active ride. Please delete the current one to upload a new ride."
+      "You already have an active ride uploaded for this week. You can upload a new ride next week."
     );
   }
 
-
   const result = await Ride.create(payload);
-
 
   await PointServices.addPoints(payload.user!.toString(), 'social_share' as any, 50);
   
   return result;
 };
+
 const getAllRidesFromDB = async (query: Record<string, unknown>, currentUserId?: string) => {
+  const { startDate, endDate, currentWeek, ...cleanedQuery } = query;
+  const dateFilter = getDateFilterFromQuery(query);
+
   const rideQuery = new QueryBuilder(
-    Ride.find({ isDeleted: false }).populate('user', 'firstName lastName image memberNumber status country'), 
-    query
+    Ride.find({ isDeleted: false, ...dateFilter }).populate('user', 'firstName lastName image memberNumber status country'), cleanedQuery
   )
     .filter()
     .sort()
@@ -113,8 +129,13 @@ const removeVoteFromRideInDB = async (userId: string, rideId: string) => {
   await updatedRide!.save();
   return { message: "Vote removed successfully" };
 };
-const getLeaderboardFromDB = async () => {
- return await Ride.find({ isDeleted: false })
+const getLeaderboardFromDB = async (query: Record<string, unknown> = {}) => {
+  const dateFilter = getDateFilterFromQuery(query);
+
+  return await Ride.find({ 
+    isDeleted: false,
+    ...dateFilter
+  })
     .sort({ averageRating: -1, flameCount: -1 })
     .limit(10)
     .populate('user', 'firstName lastName image memberNumber');
@@ -124,12 +145,43 @@ const setBikeOfTheWeekInDB = async (rideId: string) => {
   const ride = await Ride.findById(rideId).populate('user');
   if (!ride) throw new AppError(httpStatus.NOT_FOUND, 'Ride not found');
 
+  const startOfWeek = moment().startOf('isoWeek').toDate();
+  const endOfWeek = moment().endOf('isoWeek').toDate();
+
+  // 1. Ensure the ride belongs to the CURRENT week
+  const rideCreatedAt = moment((ride as any).createdAt);
+  if (rideCreatedAt.isBefore(startOfWeek) || rideCreatedAt.isAfter(endOfWeek)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can only select a winner from the current week's rides! Old rides cannot be selected as winner."
+    );
+  }
+
+  // 2. Ensure this ride isn't already marked as winner
+  if (ride.isBikeOfTheWeek) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'This ride is already selected as Bike of the Week!');
+  }
+
+  // 3. Ensure a winner hasn't already been selected for this current week
+  const existingWeekWinner = await Ride.findOne({
+    isBikeOfTheWeek: true,
+    createdAt: { $gte: startOfWeek, $lte: endOfWeek }
+  });
+
+  if (existingWeekWinner) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'A winner has already been selected for this week.'
+    );
+  }
+
+  // 4. Reset previous winner flag so only 1 active current winner exists in DB
   await Ride.updateMany({ isBikeOfTheWeek: true }, { isBikeOfTheWeek: false });
 
   ride.isBikeOfTheWeek = true;
   await ride.save();
 
-  //500 Shred Points 
+  // 500 Shred Points 
   await PointServices.addPoints(ride.user._id.toString(), 'bike_winner' as any, 500);
 
   await sendNotification(
@@ -193,3 +245,4 @@ export const RideServices = {
   getMyRidesFromDB,
   deleteMyRideFromDB
 };
+

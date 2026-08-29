@@ -23,7 +23,7 @@ const upsertBulkQuotesInDB = async (payload: TMotivationalQuote[]) => {
 };
 
 const getAllQuotesFromDB = async (query: Record<string, unknown>) => {
-  const quoteQuery = new QueryBuilder(MotivationalQuote.find(), query)
+  const quoteQuery = new QueryBuilder(MotivationalQuote.find(), { limit: 100, sort: 'day', ...query })
     .sort()
     .filter()
     .paginate()
@@ -37,12 +37,13 @@ const getAllQuotesFromDB = async (query: Record<string, unknown>) => {
 
 const getTodayQuoteFromDB = async () => {
   const currentDate = new Date();
-  const currentDay = currentDate.getDate(); // 1-31
+  const currentDay = currentDate.getDate(); // 1 to 31
 
   let quote = await MotivationalQuote.findOne({ day: currentDay });
   
-  if (!quote && currentDay === 31) {
-    quote = await MotivationalQuote.findOne({ day: 30 });
+  // If quote for currentDay is not created in DB, fallback to day 1 quote
+  if (!quote) {
+    quote = await MotivationalQuote.findOne({ day: 1 });
   }
 
   return quote;
