@@ -177,9 +177,10 @@ export const getShopifyProductsFromDB = async (query: Record<string, unknown>) =
 
 
 export const saveAdminSelection = async (ids: string[]) => {
+  const formattedIds = (ids || []).map((id) => String(id));
   return await ShopifySelection.findOneAndUpdate(
     {}, 
-    { selectedProductIds: ids }, 
+    { $addToSet: { selectedProductIds: { $each: formattedIds } } }, 
     { upsert: true, new: true }
   );
 };
