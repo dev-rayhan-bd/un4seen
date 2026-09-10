@@ -235,8 +235,14 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
   const currentSelection = await ShopifySelection.findOne();
   const selectedIds = currentSelection ? currentSelection.selectedProductIds : [];
 
-  const { limit = 50, page_info, title, vendor, product_type, sku, searchTerm, search, keyword } = query;
-  const generalSearch = searchTerm || search || keyword || title || vendor || product_type || sku;
+  const { limit = 50, page_info, title, vendor, product_type, category, brand, sku, searchTerm, search, keyword, filter, featured, isFeatured } = query;
+  const generalSearch = searchTerm || search || keyword || title || sku;
+  const targetVendor = vendor || brand;
+  const targetCategory = product_type || category;
+
+  let products: any[] = [];
+  let nextPageToken = '';
+  let prevPageToken = '';
 
   // 1. NATIVE SHOPIFY GRAPHQL FULL-TEXT SEARCH (Used when search query is provided without REST page_info)
   if (generalSearch && !page_info) {
@@ -275,8 +281,8 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
 
       let queryStr = generalSearch.toString().trim();
       if (sku) queryStr = `sku:${sku}`;
-      else if (vendor && !searchTerm && !search) queryStr = `vendor:${vendor}`;
-      else if (product_type && !searchTerm && !search) queryStr = `product_type:${product_type}`;
+      else if (targetVendor && !searchTerm && !search) queryStr = `vendor:${targetVendor}`;
+      else if (targetCategory && !searchTerm && !search) queryStr = `product_type:${targetCategory}`;
 
       const gqlResponse = await axios.post(
         graphqlUrl,
@@ -298,7 +304,7 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
       const edges = gqlResponse.data?.data?.products?.edges || [];
 
       if (edges.length > 0) {
-        const products = edges.map((edge: any) => {
+        products = edges.map((edge: any) => {
           const p = edge.node;
           const numericId = p.id ? p.id.replace('gid://shopify/Product/', '') : '';
           const variants = p.variants?.nodes || [];
@@ -316,6 +322,7 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
             : "No description available";
 
           const allSkus = variants.map((v: any) => v.sku).filter(Boolean);
+          const isSelected = selectedIds.includes(numericId);
 
           return {
             id: numericId,
@@ -338,18 +345,10 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
             stockStatus: (variant?.inventoryQuantity || 0) > 0 ? "In Stock" : "Out of Stock",
             publishedAt: p.publishedAt,
             shopifyUrl: `https://${storeName}.myshopify.com/products/${p.handle}`,
-            isSelected: selectedIds.includes(numericId) 
+            isSelected,
+            isFeatured: isSelected
           };
         });
-
-        return {
-          meta: {
-            next_page_info: "",
-            prev_page_info: "",
-            count: products.length
-          },
-          result: products
-        };
       }
     } catch (gqlErr: any) {
       console.error('⚠️ GraphQL search failed, falling back to REST API:', gqlErr.message);
@@ -357,86 +356,123 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
   }
 
   // 2. REST API FALLBACK (Default list view or pagination)
-  const SHOPIFY_URL = `https://${storeName}.myshopify.com/admin/api/2024-04/products.json`;
-  let params: any = { limit: Math.min(Number(limit) || 50, 250) };
+  if (products.length === 0) {
+    const SHOPIFY_URL = `https://${storeName}.myshopify.com/admin/api/2024-04/products.json`;
+    let params: any = { limit: Math.min(Number(limit) || 50, 250) };
 
-  if (page_info) {
-    params.page_info = page_info;
-  } else {
-    if (title) params.title = title;
-    if (vendor) params.vendor = vendor;
-    if (product_type) params.product_type = product_type;
-  }
-
-  const response = await axios.get(SHOPIFY_URL, {
-    headers: { 'X-Shopify-Access-Token': accessToken },
-    params
-  });
-
-  let rawProducts = response.data?.products || [];
-
-  const products = rawProducts.map((p: any) => {
-    const variant = p.variants[0];
-    const price = parseFloat(variant?.price || "0");
-    const compareAtPrice = parseFloat(variant?.compare_at_price || "0");
-    
-    let discountPercentage = 0;
-    if (compareAtPrice > price) {
-      discountPercentage = Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+    if (page_info) {
+      params.page_info = page_info;
+    } else {
+      if (title) params.title = title;
+      if (targetVendor) params.vendor = targetVendor;
+      if (targetCategory) params.product_type = targetCategory;
     }
 
-    const cleanDescription = p.body_html 
-      ? p.body_html.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...'
-      : "No description available";
-    const pId = p.id.toString();
+    const response = await axios.get(SHOPIFY_URL, {
+      headers: { 'X-Shopify-Access-Token': accessToken },
+      params
+    });
 
-    // Extract variant SKUs
-    const allSkus = p.variants?.map((v: any) => v.sku).filter(Boolean) || [];
+    let rawProducts = response.data?.products || [];
 
-    return {
-      id: p.id,
-      title: p.title,
-      handle: p.handle,
-      sku: variant?.sku || (allSkus.length > 0 ? allSkus[0] : ""),
-      skus: allSkus,
-      description: cleanDescription,
-      vendor: p.vendor, 
-      category: p.product_type,
-      tags: p.tags ? p.tags.split(',') : [], 
-      status: p.status, // active, draft, or archived
-      image: p.image?.src || (p.images.length > 0 ? p.images[0].src : null),
-      price: price.toFixed(2),
-      currency: "NZD",
-      compareAtPrice: compareAtPrice > 0 ? compareAtPrice.toFixed(2) : null,
-      discountPercentage: discountPercentage > 0 ? `${discountPercentage}% OFF` : null,
-      isOnSale: compareAtPrice > price,
-      inventory: variant?.inventory_quantity || 0,
-      stockStatus: (variant?.inventory_quantity || 0) > 0 ? "In Stock" : "Out of Stock",
-      publishedAt: p.published_at,
-      shopifyUrl: `https://${storeName}.myshopify.com/products/${p.handle}`,
-      isSelected: selectedIds.includes(pId) 
-    };
-  });
+    products = rawProducts.map((p: any) => {
+      const variant = p.variants[0];
+      const price = parseFloat(variant?.price || "0");
+      const compareAtPrice = parseFloat(variant?.compare_at_price || "0");
+      
+      let discountPercentage = 0;
+      if (compareAtPrice > price) {
+        discountPercentage = Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+      }
 
-  const linkHeader = response.headers['link'];
-  let nextPageToken = '';
-  let prevPageToken = '';
+      const cleanDescription = p.body_html 
+        ? p.body_html.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...'
+        : "No description available";
+      const pId = p.id.toString();
 
-  if (linkHeader) {
-    const nextMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="next"/);
-    if (nextMatch) nextPageToken = nextMatch[1];
+      const allSkus = p.variants?.map((v: any) => v.sku).filter(Boolean) || [];
+      const isSelected = selectedIds.includes(pId);
 
-    const prevMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="previous"/);
-    if (prevMatch) prevPageToken = prevMatch[1];
+      return {
+        id: p.id,
+        title: p.title,
+        handle: p.handle,
+        sku: variant?.sku || (allSkus.length > 0 ? allSkus[0] : ""),
+        skus: allSkus,
+        description: cleanDescription,
+        vendor: p.vendor, 
+        category: p.product_type,
+        tags: p.tags ? p.tags.split(',') : [], 
+        status: p.status, // active, draft, or archived
+        image: p.image?.src || (p.images.length > 0 ? p.images[0].src : null),
+        price: price.toFixed(2),
+        currency: "NZD",
+        compareAtPrice: compareAtPrice > 0 ? compareAtPrice.toFixed(2) : null,
+        discountPercentage: discountPercentage > 0 ? `${discountPercentage}% OFF` : null,
+        isOnSale: compareAtPrice > price,
+        inventory: variant?.inventory_quantity || 0,
+        stockStatus: (variant?.inventory_quantity || 0) > 0 ? "In Stock" : "Out of Stock",
+        publishedAt: p.published_at,
+        shopifyUrl: `https://${storeName}.myshopify.com/products/${p.handle}`,
+        isSelected,
+        isFeatured: isSelected
+      };
+    });
+
+    const linkHeader = response.headers['link'];
+    if (linkHeader) {
+      const nextMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="next"/);
+      if (nextMatch) nextPageToken = nextMatch[1];
+
+      const prevMatch = linkHeader.match(/page_info=([^>]+)>;\s*rel="previous"/);
+      if (prevMatch) prevPageToken = prevMatch[1];
+    }
+  }
+
+  // Additional in-memory filtering for vendor/category if provided and not handled upstream
+  if (targetVendor && products.length > 0) {
+    products = products.filter((p: any) => p.vendor?.toLowerCase() === targetVendor.toString().toLowerCase());
+  }
+  if (targetCategory && products.length > 0) {
+    products = products.filter((p: any) => p.category?.toLowerCase() === targetCategory.toString().toLowerCase());
+  }
+
+  // Calculate statistics BEFORE applying tab filters
+  const totalFeatured = selectedIds.length;
+  const totalPageProducts = products.length;
+  const pageFeatured = products.filter((p: any) => p.isSelected).length;
+  const pageNotFeatured = products.filter((p: any) => !p.isSelected).length;
+
+  // Apply tab filtering ('all', 'featured', 'not_featured')
+  let filteredResult = products;
+  const filterType = (filter || '').toString().toLowerCase();
+  const featuredFlag = (featured || isFeatured || '').toString().toLowerCase();
+
+  if (filterType === 'featured' || featuredFlag === 'true' || featuredFlag === 'featured') {
+    filteredResult = products.filter((p: any) => p.isSelected);
+  } else if (filterType === 'not_featured' || filterType === 'not-featured' || featuredFlag === 'false' || featuredFlag === 'not_featured' || featuredFlag === 'not-featured') {
+    filteredResult = products.filter((p: any) => !p.isSelected);
   }
 
   return {
     meta: {
       next_page_info: nextPageToken,
       prev_page_info: prevPageToken,
-      count: products.length
+      count: filteredResult.length,
+      totalPageProducts,
+      totalFeatured,
+      pageFeatured,
+      pageNotFeatured,
+      featuredCount: pageFeatured,
+      notFeaturedCount: pageNotFeatured,
+      stats: {
+        totalPageProducts,
+        totalFeatured,
+        pageFeatured,
+        pageNotFeatured
+      }
     },
-    result: products
+    result: filteredResult
   };
 };
 
