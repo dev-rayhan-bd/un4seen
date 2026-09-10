@@ -1,75 +1,66 @@
 import { Request, Response } from 'express';
-
 import AppError from '../../errors/AppError';
-
 import httpStatus from 'http-status';
-
-
-import Terms from './about.model';
+import About from './about.model';
 import sendResponse from '../../utils/sendResponse';
 import catchAsync from '../../utils/catchAsync';
 
-
-// Controller to create or update Privacy Policy content..
-const createOrUpdateTerms = catchAsync(async (req: Request, res: Response) => {
+// Controller to create or update About Us content
+const createOrUpdateAbout = catchAsync(async (req: Request, res: Response) => {
   const { aboutUs } = req.body;
 
-  // Check if Privacy Policy exists; if it does, update, otherwise create
-  const existingTerms = await Terms.findOne();
+  const existingAbout = await About.findOne();
 
-  if (existingTerms) {
-    // Update the existing Privacy Policy record
-    const updatedPrivacyPolicy = await Terms.updateOne(
-      { _id: existingTerms._id },
+  if (existingAbout) {
+    const updatedAbout = await About.findByIdAndUpdate(
+      existingAbout._id,
       { aboutUs },
-      { runValidators: true },
+      { new: true, runValidators: true },
     );
 
-    if (!updatedPrivacyPolicy.modifiedCount) {
-      throw new AppError(httpStatus.BAD_REQUEST,('Failed to update About us'));
+    if (!updatedAbout) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to update About Us');
     }
 
-   return sendResponse(res, {
+    return sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'About us created successfully',
-      data: updatedPrivacyPolicy,
+      message: 'About Us updated successfully',
+      data: updatedAbout,
     });
   } else {
-    // Create a new Privacy Policy record
-    const newTerms = await Terms.create({ aboutUs });
+    const newAbout = await About.create({ aboutUs });
 
-    if (!newTerms) {
-    throw new AppError(httpStatus.BAD_REQUEST,('Failed to About Us'));
+    if (!newAbout) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create About Us');
     }
 
-   return sendResponse(res, {
+    return sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: 'About Us created successfully',
-      data: newTerms,
+      data: newAbout,
     });
   }
 });
 
-// Controller to get Privacy Policy content
-const getTerms = catchAsync(async (req: Request, res: Response) => {
-  const terms = await Terms.findOne();
+// Controller to get About Us content
+const getAbout = catchAsync(async (req: Request, res: Response) => {
+  const about = await About.findOne();
 
-  if (!terms) {
-     throw new AppError(httpStatus.NOT_FOUND,('No About us!'));
-
+  if (!about) {
+    throw new AppError(httpStatus.NOT_FOUND, 'No About Us found!');
   }
 
-   return sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Terms retrived successfully',
-      data: terms,
-    });
+  return sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'About Us retrieved successfully',
+    data: about,
+  });
 });
 
 export default {
-  createOrUpdateTerms,
-  getTerms,
+  createOrUpdateAbout,
+  getAbout,
 };

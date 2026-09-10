@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 
 import { NotificationServices } from './notification.services';
-import catchAsync from '../../../utils/catchAsync';
-import sendResponse from '../../../utils/sendResponse';
-import AppError from '../../../errors/AppError';
+import catchAsync from '../../utils/catchAsync';
+import sendResponse from '../../utils/sendResponse';
+import AppError from '../../errors/AppError';
 
 const getMyNotifications = catchAsync(async (req: Request, res: Response) => {
   const result = await NotificationServices.getMyNotificationsFromDB(req.user.userId, req.query);

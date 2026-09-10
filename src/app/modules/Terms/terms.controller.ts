@@ -1,72 +1,63 @@
 import { Request, Response } from 'express';
-
 import AppError from '../../errors/AppError';
-
 import httpStatus from 'http-status';
-
-
 import Terms from './terms.model';
 import sendResponse from '../../utils/sendResponse';
 import catchAsync from '../../utils/catchAsync';
 
-
-// Controller to create or update Privacy Policy content
+// Controller to create or update Terms & Conditions content
 const createOrUpdateTerms = catchAsync(async (req: Request, res: Response) => {
   const { termsCondition } = req.body;
 
-  // Check if Privacy Policy exists; if it does, update, otherwise create
   const existingTerms = await Terms.findOne();
 
   if (existingTerms) {
-    // Update the existing Privacy Policy record
-    const updatedPrivacyPolicy = await Terms.updateOne(
-      { _id: existingTerms._id },
+    const updatedTerms = await Terms.findByIdAndUpdate(
+      existingTerms._id,
       { termsCondition },
-      { runValidators: true },
+      { new: true, runValidators: true },
     );
 
-    if (!updatedPrivacyPolicy.modifiedCount) {
-      throw new AppError(httpStatus.BAD_REQUEST,('Failed to update Privacy Policy'));
+    if (!updatedTerms) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to update Terms and Conditions');
     }
 
-   return sendResponse(res, {
+    return sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Terms created successfully',
-      data: updatedPrivacyPolicy,
+      message: 'Terms & Conditions updated successfully',
+      data: updatedTerms,
     });
   } else {
-    // Create a new Privacy Policy record
     const newTerms = await Terms.create({ termsCondition });
 
     if (!newTerms) {
-    throw new AppError(httpStatus.BAD_REQUEST,('Failed to Terms and condition'));
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create Terms and Conditions');
     }
 
-   return sendResponse(res, {
+    return sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Terms & Condition created successfully',
+      message: 'Terms & Conditions created successfully',
       data: newTerms,
     });
   }
 });
 
-// Controller to get Privacy Policy content
+// Controller to get Terms & Conditions content
 const getTerms = catchAsync(async (req: Request, res: Response) => {
   const terms = await Terms.findOne();
 
   if (!terms) {
-     throw new AppError(httpStatus.NOT_FOUND,('No Terms found!'));
-
+    throw new AppError(httpStatus.NOT_FOUND, 'No Terms found!');
   }
 
-   return sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Terms retrived successfully',
-      data: terms,
-    });
+  return sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Terms retrieved successfully',
+    data: terms,
+  });
 });
 
 export default {

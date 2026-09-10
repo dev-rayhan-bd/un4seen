@@ -3,6 +3,8 @@ import { Router } from 'express';
 import aboutRouter from '../modules/about/about.route';
 import privacyPolicyRouter from '../modules/PrivacyPolicy/privacyPolicy.routes';
 import termsRouter from '../modules/Terms/terms.route';
+import syndicateTermsRouter from '../modules/SyndicateTerms/syndicateTerms.routes';
+import giveawayTermsRouter from '../modules/GiveawayTerms/giveawayTerms.routes';
 import { FaqRoutes } from '../modules/FAQ/faq.routes';
 import { ContactRoutes } from '../modules/ContactUs/contact.route';
 import { UserRoutes } from '../modules/User/user.routes';
@@ -22,7 +24,7 @@ import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
 import { CrewChoiceRoutes } from '../modules/CrewChoice/crewChoice.routes';
 import { ChannelRoutes } from '../modules/Channel/channel.routes';
-import { NotificationRoutes } from '../modules/PrivacyPolicy/Notification/notification.routes';
+
 import { PostRoutes } from '../modules/Post/post.routes';
 import { Un4seenWorldRoutes } from '../modules/Un4seenWorld/un4seenWorld.routes';
 import { PointSettingRoutes } from '../modules/PointSettings/pointSettings.routes';
@@ -35,50 +37,59 @@ import { AdminRoutes } from '../modules/Admin/admin.routes';
 
 
 import { MotivationalQuoteRoutes } from '../modules/MotivationalQuote/motivationalQuote.routes';
+import { NotificationRoutes } from '../modules/Notification/notification.routes';
 
 const router = Router();
 
 const moduleRoutes = [
   {
     path: '/auth',
-    route:AuthRoutes
+    route: AuthRoutes
   },
   {
     path: '/user',
-    route:UserRoutes
+    route: UserRoutes
   },
   {
     path: '/about',
-    route:aboutRouter
+    route: aboutRouter
   },
   {
     path: '/privacy',
-    route:privacyPolicyRouter
+    route: privacyPolicyRouter
   },
   {
     path: '/terms',
-    route:termsRouter
+    route: termsRouter
+  },
+  {
+    path: '/syndicate-terms',
+    route: syndicateTermsRouter
+  },
+  {
+    path: '/giveaway-terms',
+    route: giveawayTermsRouter
   },
   {
     path: '/faq',
-    route:FaqRoutes
+    route: FaqRoutes
   },
   {
     path: '/contact',
-    route:ContactRoutes
+    route: ContactRoutes
   },
-{
+  {
     path: '/shred-points',
     route: PointRoutes
   },
   {
-  path: '/shopify',
-  route: ShopifyRoutes,
-},
+    path: '/shopify',
+    route: ShopifyRoutes,
+  },
   {
-  path: '/rides',
-  route: RideRoutes,
-},
+    path: '/rides',
+    route: RideRoutes,
+  },
   {
     path: '/competitions',
     route: CompetitionRoutes,

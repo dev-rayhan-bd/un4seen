@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
 
 import { NotificationModel } from './notification.model';
-import QueryBuilder from '../../../builder/QueryBuilder';
-import AppError from '../../../errors/AppError';
+import QueryBuilder from '../../builder/QueryBuilder';
+import AppError from '../../errors/AppError';
+
 
 
 const getMyNotificationsFromDB = async (userId: string, query: Record<string, unknown>) => {

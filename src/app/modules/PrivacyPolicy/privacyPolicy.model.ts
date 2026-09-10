@@ -4,7 +4,11 @@ import { IPrivacyPolicy } from './PrivacyPolicy.interface';
 
 export const privacyPolicySchema = new mongoose.Schema<IPrivacyPolicy>(
   {
-    privacyPolicy: String,
+    privacyPolicy: {
+      type: String,
+      required: [true, 'Privacy Policy is required'],
+      maxlength: [50000, 'Privacy Policy cannot exceed 50000 characters'],
+    },
   },
   {
     timestamps: true,

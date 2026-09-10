@@ -1,6 +1,6 @@
 import { PointSettings } from './pointSettings.model';
 import { TPointSettings } from './pointSettings.interface';
-import AppError from '../../errors/AppError';
+import AppError from '../../errors/AppError'; 
 import  httpStatus  from 'http-status';
 import { syncPointValues } from '../ShredPoints/points.constant';
 const getPointSettingsFromDB = async () => {

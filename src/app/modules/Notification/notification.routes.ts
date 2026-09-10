@@ -1,8 +1,9 @@
 import express from 'express';
 
 import { NotificationControllers } from './notification.controller';
-import { USER_ROLE } from '../../Auth/auth.constant';
-import auth from '../../../middleware/auth';
+import { USER_ROLE } from '../Auth/auth.constant';
+import auth from '../../middleware/auth';
+
 
 const router = express.Router();
 
