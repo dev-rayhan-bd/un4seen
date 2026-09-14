@@ -240,6 +240,138 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
   const targetVendor = vendor || brand;
   const targetCategory = product_type || category;
 
+  const filterType = (filter || '').toString().toLowerCase();
+  const featuredFlag = (featured || isFeatured || '').toString().toLowerCase();
+
+  const isFeaturedFilter = filterType === 'featured' || featuredFlag === 'true' || featuredFlag === '1' || featuredFlag === 'featured';
+  const isNotFeaturedFilter = filterType === 'not_featured' || filterType === 'not-featured' || featuredFlag === 'false' || featuredFlag === '0' || featuredFlag === 'not_featured' || featuredFlag === 'not-featured';
+
+  // 0. DIRECT FEATURED PRODUCTS FETCH BY STORED IDS
+  if (isFeaturedFilter) {
+    if (selectedIds.length === 0) {
+      return {
+        meta: {
+          next_page_info: '',
+          prev_page_info: '',
+          count: 0,
+          totalPageProducts: 0,
+          totalFeatured: 0,
+          pageFeatured: 0,
+          pageNotFeatured: 0,
+          featuredCount: 0,
+          notFeaturedCount: 0,
+          stats: {
+            totalPageProducts: 0,
+            totalFeatured: 0,
+            pageFeatured: 0,
+            pageNotFeatured: 0
+          }
+        },
+        result: []
+      };
+    }
+
+    let rawProducts: any[] = [];
+    const chunkSize = 250;
+    for (let i = 0; i < selectedIds.length; i += chunkSize) {
+      const chunkIds = selectedIds.slice(i, i + chunkSize).join(',');
+      const SHOPIFY_URL = `https://${storeName}.myshopify.com/admin/api/2024-04/products.json`;
+      const response = await axios.get(SHOPIFY_URL, {
+        headers: { 'X-Shopify-Access-Token': accessToken },
+        params: { ids: chunkIds, limit: chunkSize }
+      });
+      if (response.data?.products) {
+        rawProducts.push(...response.data.products);
+      }
+    }
+
+    let featuredProducts = rawProducts.map((p: any) => {
+      const variant = p.variants ? p.variants[0] : null;
+      const price = parseFloat(variant?.price || "0");
+      const compareAtPrice = parseFloat(variant?.compare_at_price || "0");
+      
+      let discountPercentage = 0;
+      if (compareAtPrice > price) {
+        discountPercentage = Math.round(((compareAtPrice - price) / compareAtPrice) * 100);
+      }
+
+      const cleanDescription = p.body_html 
+        ? p.body_html.replace(/<[^>]*>?/gm, '').substring(0, 120) + '...'
+        : "No description available";
+
+      const allSkus = p.variants?.map((v: any) => v.sku).filter(Boolean) || [];
+
+      return {
+        id: p.id,
+        title: p.title,
+        handle: p.handle,
+        sku: variant?.sku || (allSkus.length > 0 ? allSkus[0] : ""),
+        skus: allSkus,
+        description: cleanDescription,
+        vendor: p.vendor, 
+        category: p.product_type,
+        tags: typeof p.tags === 'string' ? p.tags.split(',') : (Array.isArray(p.tags) ? p.tags : []), 
+        status: p.status,
+        image: p.image?.src || (p.images && p.images.length > 0 ? p.images[0].src : null),
+        price: price.toFixed(2),
+        currency: "NZD",
+        compareAtPrice: compareAtPrice > 0 ? compareAtPrice.toFixed(2) : null,
+        discountPercentage: discountPercentage > 0 ? `${discountPercentage}% OFF` : null,
+        isOnSale: compareAtPrice > price,
+        inventory: variant?.inventory_quantity || 0,
+        stockStatus: (variant?.inventory_quantity || 0) > 0 ? "In Stock" : "Out of Stock",
+        publishedAt: p.published_at,
+        shopifyUrl: `https://${storeName}.myshopify.com/products/${p.handle}`,
+        isSelected: true,
+        isFeatured: true
+      };
+    });
+
+    if (generalSearch) {
+      const searchStr = generalSearch.toString().toLowerCase();
+      featuredProducts = featuredProducts.filter((p: any) =>
+        p.title?.toLowerCase().includes(searchStr) ||
+        p.vendor?.toLowerCase().includes(searchStr) ||
+        p.category?.toLowerCase().includes(searchStr) ||
+        p.sku?.toLowerCase().includes(searchStr) ||
+        p.skus?.some((s: string) => s?.toLowerCase().includes(searchStr))
+      );
+    }
+    if (targetVendor) {
+      featuredProducts = featuredProducts.filter((p: any) => p.vendor?.toLowerCase() === targetVendor.toString().toLowerCase());
+    }
+    if (targetCategory) {
+      featuredProducts = featuredProducts.filter((p: any) => p.category?.toLowerCase() === targetCategory.toString().toLowerCase());
+    }
+
+    const totalMatchingFeatured = featuredProducts.length;
+    const pageNum = Number(query.page) || 1;
+    const limitNum = Number(query.limit) || 50;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedResult = featuredProducts.slice(skip, skip + limitNum);
+
+    return {
+      meta: {
+        next_page_info: '',
+        prev_page_info: '',
+        count: paginatedResult.length,
+        totalPageProducts: totalMatchingFeatured,
+        totalFeatured: selectedIds.length,
+        pageFeatured: paginatedResult.length,
+        pageNotFeatured: 0,
+        featuredCount: paginatedResult.length,
+        notFeaturedCount: 0,
+        stats: {
+          totalPageProducts: totalMatchingFeatured,
+          totalFeatured: selectedIds.length,
+          pageFeatured: paginatedResult.length,
+          pageNotFeatured: 0
+        }
+      },
+      result: paginatedResult
+    };
+  }
+
   let products: any[] = [];
   let nextPageToken = '';
   let prevPageToken = '';
@@ -402,7 +534,7 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
         description: cleanDescription,
         vendor: p.vendor, 
         category: p.product_type,
-        tags: p.tags ? p.tags.split(',') : [], 
+        tags: p.tags ? (typeof p.tags === 'string' ? p.tags.split(',') : p.tags) : [], 
         status: p.status, // active, draft, or archived
         image: p.image?.src || (p.images.length > 0 ? p.images[0].src : null),
         price: price.toFixed(2),
@@ -445,12 +577,10 @@ export const fetchAllProductsFromShopify = async (query: Record<string, any>) =>
 
   // Apply tab filtering ('all', 'featured', 'not_featured')
   let filteredResult = products;
-  const filterType = (filter || '').toString().toLowerCase();
-  const featuredFlag = (featured || isFeatured || '').toString().toLowerCase();
 
-  if (filterType === 'featured' || featuredFlag === 'true' || featuredFlag === 'featured') {
+  if (isFeaturedFilter) {
     filteredResult = products.filter((p: any) => p.isSelected);
-  } else if (filterType === 'not_featured' || filterType === 'not-featured' || featuredFlag === 'false' || featuredFlag === 'not_featured' || featuredFlag === 'not-featured') {
+  } else if (isNotFeaturedFilter) {
     filteredResult = products.filter((p: any) => !p.isSelected);
   }
 
