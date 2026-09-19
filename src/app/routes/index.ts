@@ -19,6 +19,7 @@ import { MilestoneRoutes } from '../modules/Milestone/milestone.routes';
 import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communityMilestone.routes';
 import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 import { StoryRoutes } from '../modules/Story/story.routes';
+import { AnnouncementRoutes } from '../modules/Announcement/announcement.routes';
 import { BikeRoutes } from '../modules/Bike/bike.routes';
 import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
@@ -114,6 +115,10 @@ const moduleRoutes = [
   {
     path: '/stories',
     route: StoryRoutes,
+  },
+  {
+    path: '/announcements',
+    route: AnnouncementRoutes,
   },
   {
     path: '/bikes',
