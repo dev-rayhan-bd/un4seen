@@ -20,6 +20,7 @@ import { CommunityMilestoneRoutes } from '../modules/CommunityMilestone/communit
 import { TestRiderRoutes } from '../modules/TestRider/testRider.routes';
 import { StoryRoutes } from '../modules/Story/story.routes';
 import { AnnouncementRoutes } from '../modules/Announcement/announcement.routes';
+import { SupportChatRoutes } from '../modules/SupportChat/supportChat.routes';
 import { BikeRoutes } from '../modules/Bike/bike.routes';
 import { MusicRoutes } from '../modules/Music/music.routes';
 import { IdeaRoutes } from '../modules/Idea/idea.routes';
@@ -163,6 +164,10 @@ const moduleRoutes = [
   {
     path: '/motivational-quotes',
     route: MotivationalQuoteRoutes,
+  },
+  {
+    path: '/support-chat',
+    route: SupportChatRoutes,
   },
 ];
 

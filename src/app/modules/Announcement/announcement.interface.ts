@@ -7,7 +7,6 @@ export type TAnnouncement = {
   music?: Types.ObjectId;
   title?: string;
   caption?: string;
-  category?: string;
   hearts: Types.ObjectId[];
   heartCount: number;
   isPremium: boolean;

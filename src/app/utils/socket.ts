@@ -4,6 +4,7 @@ import { verifyToken } from '../modules/Auth/auth.utils';
 import config from '../config';
 import { ChannelServices } from '../modules/Channel/channel.services';
 import { UserModel } from '../modules/User/user.model';
+import { SupportChatServices } from '../modules/SupportChat/supportChat.services';
 
 let io: Server;
 const onlineUsers = new Set<string>(); 
@@ -80,6 +81,36 @@ export const initializeSocket = (server: HttpServer) => {
 
     socket.on('STOP_TYPING', (targetId: string) => {
       socket.to(targetId).emit('USER_STOP_TYPING', { userId: myId });
+    });
+
+    // Support Chat Socket Handlers
+    socket.on('JOIN_SUPPORT_SESSION', (sessionId: string) => {
+      socket.join(sessionId);
+      console.log(`🎧 Joined Support Session: ${sessionId}`);
+    });
+
+    socket.on('SEND_SUPPORT_MESSAGE', async (data: { sessionId?: string; text?: string; file?: string }) => {
+      try {
+        const userRole = socket.data.user.role;
+        const result = await SupportChatServices.sendSupportMessageInDB(myId, userRole, data);
+
+        const sessionIdStr = result.session._id.toString();
+        const userIdStr = (result.session.user as any)?._id?.toString() || result.session.user.toString();
+
+        io.to(sessionIdStr).emit('RECEIVE_SUPPORT_MESSAGE', result);
+        io.to(userIdStr).emit('RECEIVE_SUPPORT_MESSAGE', result);
+        io.emit('NEW_SUPPORT_MESSAGE_ALERT', result);
+      } catch (error: any) {
+        socket.emit('ERROR', { message: error.message });
+      }
+    });
+
+    socket.on('SUPPORT_TYPING', (data: { sessionId: string }) => {
+      socket.to(data.sessionId).emit('USER_SUPPORT_TYPING', { userId: myId, sessionId: data.sessionId });
+    });
+
+    socket.on('SUPPORT_STOP_TYPING', (data: { sessionId: string }) => {
+      socket.to(data.sessionId).emit('USER_SUPPORT_STOP_TYPING', { userId: myId, sessionId: data.sessionId });
     });
 
  socket.on('disconnect', async () => {

@@ -9,7 +9,6 @@ const announcementSchema = new Schema<TAnnouncement>(
     music: { type: Schema.Types.ObjectId, ref: 'Music' },
     title: { type: String },
     caption: { type: String },
-    category: { type: String },
     hearts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     heartCount: { type: Number, default: 0 },
     isPremium: { type: Boolean, default: false },
