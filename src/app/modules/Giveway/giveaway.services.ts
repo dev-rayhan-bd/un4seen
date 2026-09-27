@@ -4,9 +4,10 @@ import { Giveaway } from './giveaway.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { TGiveaway } from './giveaway.interface';
 import { computeDateBasedStatus } from '../../utils/computeDateBasedStatus';
+import { nowNZDate } from '../../utils/nzTime';
 
 const updateExpiredGiveaways = async () => {
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
   await Giveaway.updateMany(
     { status: 'pending', endDate: { $lt: now } },
     { $set: { status: 'completed' } }
@@ -76,7 +77,7 @@ const getActiveGiveawayFromDB = async () => {
 
   const result = await Giveaway.findOne({ 
     status: 'pending', 
-    endDate: { $gte: new Date() } 
+    endDate: { $gte: nowNZDate() } // NZ time
   }).sort({ endDate: 1 });
   
   return result;
@@ -139,7 +140,7 @@ const deleteGiveawayFromDB = async (id: string) => {
 
 const getGiveawayPageDataFromDB = async () => {
   await updateExpiredGiveaways();
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
 
   const currentWeekly = await Giveaway.findOne({
     status: 'pending',

@@ -4,12 +4,13 @@ import { Competition, CompetitionEntry } from './competition.model';
 import { PointServices } from '../ShredPoints/points.services';
 import { TCompetition } from './competition.interface';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { nowNZDate, startOfTodayNZ } from '../../utils/nzTime';
 
 const submitEntryInDB = async (userId: string, payload: any) => {
   const competition = await Competition.findById(payload.competition);
   if (!competition) throw new AppError(httpStatus.NOT_FOUND, "Competition not found");
 
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
   if (now > new Date(competition.endDate)) {
     throw new AppError(httpStatus.BAD_REQUEST, "This competition has ended. Submissions are closed.");
   }
@@ -40,12 +41,12 @@ const getCompetitionGallery = async (competitionId: string, currentUserId?: stri
   });
 };
 const createCompetitionIntoDB = async (payload: TCompetition) => {
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
   const startDate = new Date(payload.startDate);
   const endDate = new Date(payload.endDate);
 
-  // Check: startDate cannot be before today
-  if (startDate < new Date(now.setHours(0, 0, 0, 0))) {
+  // Check: startDate cannot be before today (NZ time)
+  if (startDate < startOfTodayNZ()) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Start date cannot be in the past. Please select a future date.'
@@ -96,7 +97,7 @@ const getAllCompetitionsFromDB = async (query: Record<string, unknown>, currentU
   const result = await competitionQuery.modelQuery.lean() as any[];
   const meta = await competitionQuery.countTotal();
 
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
 
 
   const modifiedResult = await Promise.all(result.map(async (comp) => {
@@ -217,7 +218,7 @@ const setWinnerInDB = async (entryId: string) => {
 
 
 const getRunningCompetitionFromDB = async (currentUserId?: string) => {
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
 
 
   const competition = await Competition.findOne({
@@ -252,7 +253,7 @@ const updateCompetitionInDB = async (id: string, payload: Partial<TCompetition>)
   if (!isExist) throw new AppError(httpStatus.NOT_FOUND, 'Competition not found');
 
 
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
   const startDate = payload.startDate ? new Date(payload.startDate) : new Date(isExist.startDate);
   const endDate = payload.endDate ? new Date(payload.endDate) : new Date(isExist.endDate);
 

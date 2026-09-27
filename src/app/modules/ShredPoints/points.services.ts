@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import moment from 'moment';
+import { todayNZ, nowNZDate } from '../../utils/nzTime';
 import AppError from '../../errors/AppError';
 import { UserModel } from '../User/user.model';
 import { PointTransaction } from './points.model';
@@ -44,7 +44,7 @@ const addPoints = async (userId: string, source: TPointSource, customAmount?: nu
 
 const claimDailyPoints = async (userId: string) => {
   const user = await UserModel.findById(userId);
-  const today = moment().format('YYYY-MM-DD');
+  const today = todayNZ(); // NZ date
 
   if (user?.lastDailyClaimDate === today) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Already claimed today');
@@ -116,7 +116,7 @@ const getShredPointsDashboard = async (userId: string) => {
   const totalUsers = await UserModel.countDocuments(); // Community goals
 
   const birthdayStatus = await checkAndAwardBirthdayReward(userId);
-  const today = moment().format('YYYY-MM-DD');
+  const today = todayNZ(); // NZ date
   const canClaimDaily = user?.lastDailyClaimDate !== today;
 
   const totalActiveMembers = await UserModel.countDocuments({ status: 'active' });
@@ -257,7 +257,7 @@ const checkAndAwardBirthdayReward = async (userId: string) => {
   const user = await UserModel.findById(userId);
   if (!user || !user.dob) return { showBirthdayPopup: false };
 
-  const today = new Date();
+  const today = nowNZDate(); // NZ time
   const dob = new Date(user.dob);
   const currentYear = today.getFullYear();
 

@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { Post, Comment } from './post.model';
 import QueryBuilder from '../../builder/QueryBuilder';
-import moment from 'moment';
+import { toNZMoment } from '../../utils/nzTime';
 import { TComment, TPost } from './post.interface';
 import { Channel } from '../Channel/channel.model';
 
@@ -44,7 +44,7 @@ const getChannelPostsFromDB = async (channelId: string, userId: string, query: R
 
       return {
         ...post.toObject(),
-        timeAgo: moment(post.createdAt).fromNow(),
+        timeAgo: toNZMoment(post.createdAt).fromNow(), // NZ time
         isLiked: post.likes.some((id) => id.toString() === userId),
         recentComments: comments,
       };

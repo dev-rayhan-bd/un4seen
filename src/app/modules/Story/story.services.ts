@@ -3,7 +3,7 @@ import AppError from '../../errors/AppError';
 import { Story } from './story.model';
 
 import { SavedStory } from './savedStory.model';
-import moment from 'moment';
+import { nowNZDate, toNZMoment } from '../../utils/nzTime';
 
 
 
@@ -60,7 +60,7 @@ const getAllStoriesFromDB = async (currentUserId: string, userRole: string, isDe
         isOwnStory: (story.user as any)._id.toString() === currentUserId,
         isHearted: story.hearts.includes(currentUserId as any),
         isSaved: !!isSaved,
-        timeAgo: moment(story.createdAt).fromNow(), 
+        timeAgo: toNZMoment(story.createdAt).fromNow(), // NZ time
       };
     })
   );
@@ -108,7 +108,7 @@ const getMySavedStoriesFromDB = async (userId: string) => {
         isOwnStory: storyObj.user?._id?.toString() === userId,
         isHearted: storyObj.hearts?.includes(userId as any) ?? false,
         isSaved: true,
-        timeAgo: moment(storyObj.createdAt).fromNow()
+        timeAgo: toNZMoment(storyObj.createdAt).fromNow() // NZ time
       };
     });
 };

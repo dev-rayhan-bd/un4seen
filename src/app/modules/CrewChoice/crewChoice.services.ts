@@ -1,12 +1,12 @@
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { CrewChoice } from './crewChoice.model';
-import moment from 'moment';
+import { nowNZDate, toNZMoment } from '../../utils/nzTime';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { computeDateBasedStatus } from '../../utils/computeDateBasedStatus';
 
 const createPollInDB = async (payload: any) => {
-  const phase = computeDateBasedStatus(payload.startDate || new Date(), payload.endDate);
+  const phase = computeDateBasedStatus(payload.startDate || nowNZDate(), payload.endDate); // NZ time
   payload.status = phase === 'ended' ? 'ended' : 'active';
   return await CrewChoice.create(payload);
 };
@@ -22,7 +22,7 @@ const formatPollData = (poll: any, userId: string, now: Date) => {
     }
   });
 
-  const diff = moment(pollObj.endDate).diff(moment(now), 'days');
+  const diff = toNZMoment(pollObj.endDate).diff(toNZMoment(now), 'days'); // NZ time diff
 
   return {
     _id: pollObj._id,
@@ -47,7 +47,7 @@ const formatPollData = (poll: any, userId: string, now: Date) => {
 };
 
 const getActivePollsFromDB = async (userId: string) => {
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
   const polls = await CrewChoice.find({ 
     isDeleted: false, 
     status: 'active',
@@ -60,7 +60,7 @@ const castVoteInDB = async (userId: string, pollId: string, optionIndex: number)
   const poll = await CrewChoice.findById(pollId);
   if (!poll) throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
 
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
 
 
   if (poll.status === 'ended' || now > poll.endDate) {
@@ -88,7 +88,7 @@ const castVoteInDB = async (userId: string, pollId: string, optionIndex: number)
 
 
 const getPastPollsFromDB = async (userId: string, query: Record<string, unknown>) => {
-  const now = new Date();
+  const now = nowNZDate(); // NZ time
 
 
   const pollQuery = new QueryBuilder(

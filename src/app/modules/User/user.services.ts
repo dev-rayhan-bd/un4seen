@@ -1,4 +1,4 @@
-import moment from 'moment';
+import { nowNZ, nowNZDate, startOfWeekNZ, toNZMoment } from '../../utils/nzTime';
 import QueryBuilder from '../../builder/QueryBuilder';
 import AppError from '../../errors/AppError';
 import { TUser } from './user.interface';
@@ -127,8 +127,8 @@ const getCompleteProfileData = async (targetId: string, viewerId: string) => {
   const activeBike = await Bike.findOne({ user: targetId, isRetired: false })
     .select('_id image make model year');
 
-  const joinDate = moment(userObj.createdAt);
-  const now = moment();
+  const joinDate = toNZMoment(userObj.createdAt); // NZ time
+  const now = nowNZ(); // NZ time
   const durationYears = now.diff(joinDate, 'years', true).toFixed(1);
   const durationMonths = now.diff(joinDate, 'months');
 
@@ -198,8 +198,8 @@ const getFollowingListFromDB = async (userId: string, query: Record<string, unkn
 
 
 const getHomePageDataFromDB = async (userId: string) => {
-  const now = new Date();
-  const startOfWeek = moment().startOf('isoWeek').toDate();
+  const now = nowNZDate();  // NZ time
+  const startOfWeek = startOfWeekNZ(); // NZ week start
 
   await Giveaway.updateMany(
     { status: 'pending', endDate: { $lt: now } },

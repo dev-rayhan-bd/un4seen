@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { Announcement } from './announcement.model';
 import { SavedAnnouncement } from './savedAnnouncement.model';
-import moment from 'moment';
+import { nowNZDate, toNZMoment } from '../../utils/nzTime';
 
 const createAnnouncementInDB = async (userId: string, payload: any) => {
   const result = await Announcement.create({
@@ -30,7 +30,7 @@ const getAllAnnouncementsFromDB = async (
   isOwnStory?: boolean
 ) => {
   const query: any = {
-    expiresAt: { $gt: new Date() },
+    expiresAt: { $gt: nowNZDate() }, // NZ time
   };
 
   if (isDeleted !== undefined) {
@@ -66,7 +66,7 @@ const getAllAnnouncementsFromDB = async (
         isOwnAnnouncement: (announcement.user as any)?._id?.toString() === currentUserId,
         isHearted: announcement.hearts.includes(currentUserId as any),
         isSaved: !!isSaved,
-        timeAgo: moment(announcement.createdAt).fromNow(),
+        timeAgo: toNZMoment(announcement.createdAt).fromNow(), // NZ relative time
       };
     })
   );
@@ -94,7 +94,7 @@ const getMySavedAnnouncementsFromDB = async (userId: string) => {
         isOwnAnnouncement: annObj.user?._id?.toString() === userId,
         isHearted: annObj.hearts?.includes(userId as any) ?? false,
         isSaved: true,
-        timeAgo: moment(annObj.createdAt).fromNow(),
+        timeAgo: toNZMoment(annObj.createdAt).fromNow(), // NZ relative time
       };
     });
 };

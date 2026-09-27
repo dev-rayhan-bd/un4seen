@@ -1,4 +1,4 @@
-import moment from 'moment';
+import { nowNZ, startOfWeekNZ, endOfWeekNZ, toNZMoment } from '../../utils/nzTime';
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import AppError from '../../errors/AppError';
@@ -10,13 +10,13 @@ import { TRide } from './ride.interface';
 
 const getDateFilterFromQuery = (query: Record<string, unknown>) => {
   if (query.startDate && query.endDate) {
-    const start = moment(query.startDate as string).startOf('day').toDate();
-    const end = moment(query.endDate as string).endOf('day').toDate();
+    const start = toNZMoment(query.startDate as string).startOf('day').toDate(); // NZ time
+    const end = toNZMoment(query.endDate as string).endOf('day').toDate();   // NZ time
     return { createdAt: { $gte: start, $lte: end } };
   }
   if (query.currentWeek === 'true') {
-    const startOfWeek = moment().startOf('isoWeek').toDate();
-    const endOfWeek = moment().endOf('isoWeek').toDate();
+    const startOfWeek = startOfWeekNZ(); // NZ week start
+    const endOfWeek = endOfWeekNZ();   // NZ week end
     return { createdAt: { $gte: startOfWeek, $lte: endOfWeek } };
   }
   // Default: Return all rides (initial screen view)
@@ -25,8 +25,8 @@ const getDateFilterFromQuery = (query: Record<string, unknown>) => {
 
 const createRideInDB = async (payload: Partial<TRide>) => {
   const { startOfWeek, endOfWeek } = { 
-    startOfWeek: moment().startOf('isoWeek').toDate(), 
-    endOfWeek: moment().endOf('isoWeek').toDate() 
+    startOfWeek: startOfWeekNZ(), // NZ week start
+    endOfWeek: endOfWeekNZ(),   // NZ week end
   };
 
   const existingRide = await Ride.findOne({ 
@@ -145,11 +145,11 @@ const setBikeOfTheWeekInDB = async (rideId: string) => {
   const ride = await Ride.findById(rideId).populate('user');
   if (!ride) throw new AppError(httpStatus.NOT_FOUND, 'Ride not found');
 
-  const startOfWeek = moment().startOf('isoWeek').toDate();
-  const endOfWeek = moment().endOf('isoWeek').toDate();
+  const startOfWeek = startOfWeekNZ(); // NZ week start
+  const endOfWeek = endOfWeekNZ();   // NZ week end
 
   // 1. Ensure the ride belongs to the CURRENT week
-  const rideCreatedAt = moment((ride as any).createdAt);
+  const rideCreatedAt = toNZMoment((ride as any).createdAt); // NZ time
   if (rideCreatedAt.isBefore(startOfWeek) || rideCreatedAt.isAfter(endOfWeek)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
