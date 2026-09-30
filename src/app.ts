@@ -47,7 +47,8 @@ app.use(
       'http://localhost:3000',
       'http://localhost:5173',
       'https://jam-dashboard-two.vercel.app',
-      'http://13.238.237.114'
+      'http://13.238.237.114',
+      'https://dashboard.un4seenworld.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
