@@ -141,8 +141,13 @@ const toggleSaveStoryInDB = async (userId: string, storyId: string) => {
   }
 };
 
-const deleteStoryFromDB = async (storyId: string, userId: string) => {
-  const story = await Story.findOne({ _id: storyId, user: userId, isDeleted: false });
+const deleteStoryFromDB = async (storyId: string, userId: string, userRole: string) => {
+  let query: any = { _id: storyId, isDeleted: false };
+  if (userRole !== 'admin' && userRole !== 'superAdmin') {
+    query.user = userId;
+  }
+
+  const story = await Story.findOne(query);
   if (!story) throw new AppError(httpStatus.NOT_FOUND, 'Story not found or unauthorized');
 
   await Story.findByIdAndUpdate(storyId, { isDeleted: true });

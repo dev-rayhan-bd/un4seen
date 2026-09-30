@@ -30,5 +30,5 @@ router.post('/:id/save', auth('member', 'admin'), StoryControllers.toggleSaveSto
 
 
 router.get('/my-saved', auth('member', 'admin'), StoryControllers.getSavedStories);
-router.delete('/:id', auth('member', 'admin'), StoryControllers.deleteStory);
+router.delete('/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), StoryControllers.deleteStory);
 export const StoryRoutes = router;

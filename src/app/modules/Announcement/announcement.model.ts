@@ -15,7 +15,6 @@ const announcementSchema = new Schema<TAnnouncement>(
     isDeleted: { type: Boolean, default: false },
     expiresAt: {
       type: Date,
-      default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
     createdAt: { type: Date, default: Date.now },
   },

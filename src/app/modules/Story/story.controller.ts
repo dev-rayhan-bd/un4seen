@@ -70,7 +70,7 @@ const getSavedStories = catchAsync(async (req, res) => {
 });
 const deleteStory = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await StoryServices.deleteStoryFromDB(id as string, req.user.userId);
+  const result = await StoryServices.deleteStoryFromDB(id as string, req.user.userId, req.user.role);
   sendResponse(res, {
     statusCode: 200,
     success: true,

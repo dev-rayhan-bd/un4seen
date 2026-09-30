@@ -29,9 +29,7 @@ const getAllAnnouncementsFromDB = async (
   isDeleted?: boolean,
   isOwnStory?: boolean
 ) => {
-  const query: any = {
-    expiresAt: { $gt: nowNZDate() }, // NZ time
-  };
+  const query: any = {};
 
   if (isDeleted !== undefined) {
     query.isDeleted = isDeleted;
