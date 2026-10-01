@@ -4,6 +4,7 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import AppError from '../../errors/AppError';
+import crypto from 'crypto';
 import { UserModel } from '../User/user.model';
 import { sendNotification } from '../../utils/sendNotification';
 import {   
@@ -14,6 +15,7 @@ import {
   saveAdminSelection, 
   toggleAdminSelection 
 } from './shopify.service';
+import { AuthServices } from '../Auth/auth.services';
 
 const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
   const { client_id, client_secret } = req.body;
@@ -139,6 +141,27 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
   const topicHeader = req.headers['x-shopify-topic'];
   const topic = Array.isArray(topicHeader) ? topicHeader[0] : topicHeader;
 
+  // --- HMAC Signature Verification ---
+  const hmacHeader = req.headers['x-shopify-hmac-sha256'];
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET || process.env.SHOPIFY_CLIENT_SECRET || process.env.SHOPIFY_API_SECRET;
+  
+  if (secret && hmacHeader && (req as any).rawBody) {
+    const generatedHash = crypto
+      .createHmac('sha256', secret)
+      .update((req as any).rawBody, 'utf8')
+      .digest('base64');
+      
+    if (generatedHash !== hmacHeader) {
+      console.error(`Invalid Shopify Webhook Signature for topic: ${topic}`);
+      throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid Shopify Signature. Request rejected.');
+    }
+  } else {
+    console.warn(`Shopify Webhook Signature Verification skipped. Missing secret, header or rawBody.`);
+    // Optionally throw error if strictly required:
+    // throw new AppError(httpStatus.UNAUTHORIZED, 'Missing Shopify Signature.');
+  }
+  // -----------------------------------
+
   const payload = req.body;
   const email = payload?.email || payload?.customer?.email || payload?.order?.email;
   const rawOrderNumber = payload?.name || (payload?.order_number ? `#${payload.order_number}` : payload?.number ? `#${payload.number}` : '');
@@ -151,6 +174,11 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
       const userId = user._id.toString();
 
       switch (topic) {
+        case 'customers/create':
+          // Pass the payload directly to the registration service
+          await AuthServices.registerFromShopify(payload);
+          break;
+
         case 'orders/create':
           await sendNotification(
             userId,
@@ -184,7 +212,12 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
           break;
       }
     } else {
-      console.log(`User with email ${email} not found for Shopify Webhook topic ${topic}`);
+      if (topic === 'customers/create') {
+        // If user doesn't exist (expected for registration), we register them
+        await AuthServices.registerFromShopify(payload);
+      } else {
+        console.log(`User with email ${email} not found for Shopify Webhook topic ${topic}`);
+      }
     }
   }
 

@@ -29,7 +29,12 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter); 
 
-app.use(express.json({ limit: '500kb' })); // Body size limit 500kb to support up to 50,000 characters text content safely while preventing DoS attacks
+app.use(express.json({ 
+  limit: '500kb',
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  }
+})); // Body size limit 500kb to support up to 50,000 characters text content safely while preventing DoS attacks
 
 // Now apply JSON parser for all other routes
 // app.use(express.json());
