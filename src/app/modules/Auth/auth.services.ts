@@ -33,10 +33,32 @@ const registerFromShopify = async (payload: any) => {
     const html = getEmailTemplate({
       userName: user.firstName,
       title: "WELCOME TO THE SYNDICATE",
-      body: `Your account has been successfully created. You can now access the exclusive Syndicate features using the credentials below:<br><br>
-             <strong>Email:</strong> ${email}<br>
-             <strong>Temporary Password:</strong> ${tempPassword}<br><br>
-             <em>Note: For security, we recommend changing your password from your profile settings after your first login.</em>`,
+      body: `
+        <p style="color: #f3f4f6 !important; font-size: 15px; line-height: 1.6; margin: 0 0 22px 0;">
+          Your account has been successfully created. You can now access the exclusive Syndicate features using the credentials below:
+        </p>
+        
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 440px; margin: 20px auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 8px; text-align: left;">
+          <tr>
+            <td style="padding: 16px 20px; border-bottom: 1px solid #2a2a2a;">
+              <div style="color: #cbd5e1 !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Email Address</div>
+              <div style="color: #00A3FF !important; font-size: 15px; font-weight: 600; word-break: break-all;">${email}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 16px 20px;">
+              <div style="color: #cbd5e1 !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Temporary Password</div>
+              <div>
+                <span style="color: #ffffff !important; font-size: 16px; font-weight: 700; font-family: 'Courier New', Courier, monospace; letter-spacing: 1.5px; background-color: #0a0a0a; border: 1px solid #00A3FF; padding: 6px 14px; border-radius: 4px; display: inline-block;">${tempPassword}</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color: #cbd5e1 !important; font-size: 13px; font-style: italic; line-height: 1.5; margin: 20px 0 0 0;">
+          Note: For security, we recommend changing your password from your profile settings after your first login.
+        </p>
+      `,
       buttonText: "OPEN THE APP",
       buttonLink: "https://your-app-download-link.com" // app store link
     });
@@ -70,7 +92,7 @@ const forgotPassword = async (email: string) => {
   const html = getEmailTemplate({
     userName: user.firstName,
     title: "RESET YOUR PASSWORD",
-    body: `Use the code below to reset your password. This code will expire in 2 minutes.`,
+    body: `<p style="color: #f3f4f6 !important; font-size: 15px; line-height: 1.6; margin: 0 0 10px 0;">Use the code below to reset your password. This code will expire in 2 minutes.</p>`,
     otpCode: otp
   });
 
@@ -158,7 +180,7 @@ const resendOTP = async (email: string) => {
   const html = getEmailTemplate({
     userName: user.firstName,
     title: "NEW OTP REQUESTED",
-    body: `You requested a new verification code. Use the OTP below to proceed. This code expires in 2 minutes.`,
+    body: `<p style="color: #f3f4f6 !important; font-size: 15px; line-height: 1.6; margin: 0 0 10px 0;">You requested a new verification code. Use the OTP below to proceed. This code expires in 2 minutes.</p>`,
     otpCode: otp
   });
 

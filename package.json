@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.ts"
+    "dev": "node api.js && ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "node api.js && tsc",
+    "start": "node api.js && node dist/server.ts"
   },
   "dependencies": {
     "@types/mongo-sanitize": "^1.0.3",
