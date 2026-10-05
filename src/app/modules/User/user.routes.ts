@@ -65,4 +65,8 @@ router.get('/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getS
 router.get('/followers/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowersList);
 router.get('/following/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowingList);
 
+router.delete('/my-account', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), UserControllers.deleteMyAccount);
+router.delete('/:id', auth(USER_ROLE.admin, USER_ROLE.superAdmin), UserControllers.deleteUser);
+
 export const UserRoutes = router;
+

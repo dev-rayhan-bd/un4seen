@@ -59,6 +59,7 @@ const userSchema = new Schema<TUser, UserModelStatic>({
   type: String, 
   default: null 
 },
+    isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Sequential Member ID Logic

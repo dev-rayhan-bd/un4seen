@@ -177,6 +177,32 @@ const blockUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const result = await UserServices.deleteUserFromDB(id as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User deleted successfully',
+    data: result,
+  });
+});
+
+const deleteMyAccount = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+
+  const result = await UserServices.deleteMyAccountInDB(userId as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Your account has been deleted successfully',
+    data: result,
+  });
+});
+
 export const UserControllers = {
   getMyProfile,
   updateProfile,
@@ -188,5 +214,10 @@ export const UserControllers = {
   getMyFollowers,
   getMyFollowing,
   getHomePageData,
-  getAllMembers,updateUserStatus, blockUser
+  getAllMembers,
+  updateUserStatus, 
+  blockUser,
+  deleteUser,
+  deleteMyAccount
 };
+

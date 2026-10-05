@@ -317,16 +317,42 @@ const blockUserInDB = async (id: string, durationHours: number = 24) => {
   return result;
 };
 
+const deleteUserFromDB = async (id: string) => {
+  const user = await UserModel.findById(id);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  // Hard delete the user from the database
+  const result = await UserModel.findByIdAndDelete(id);
+  
+  return result;
+};
+
+const deleteMyAccountInDB = async (userId: string) => {
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  // Hard delete the user from the database
+  const result = await UserModel.findByIdAndDelete(userId);
+  
+  return result;
+};
+
 export const UserServices = {
   getMyProfileFromDB,
   updateProfileInDB,
   followUserInDB,
   unfollowUserInDB,
-getCompleteProfileData,
+  getCompleteProfileData,
   getFollowersListFromDB,
   getFollowingListFromDB,
   getHomePageDataFromDB,
   getAllUsersFromDB,
   updateUserStatusInDB,
-  blockUserInDB
-};
+  blockUserInDB,
+  deleteUserFromDB,
+  deleteMyAccountInDB
+};

@@ -57,7 +57,7 @@ const registerFromShopify = async (payload: any) => {
 
 const forgotPassword = async (email: string) => {
   const user = await UserModel.findOne({ email });
-  if (!user) throw new AppError(404, "User not found");
+  if (!user || user.isDeleted) throw new AppError(404, "User not found");
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expireDate = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
@@ -86,7 +86,7 @@ const verifyOTP = async (email: string, otp: string) => {
     verificationExpire: { $gt: new Date() } 
   });
 
-  if (!user) throw new AppError(400, "Invalid or expired OTP");
+  if (!user || user.isDeleted) throw new AppError(400, "Invalid or expired OTP");
   return { message: "OTP Verified. You can now reset your password." };
 };
 
@@ -94,7 +94,7 @@ const verifyOTP = async (email: string, otp: string) => {
 const resetPassword = async (payload: any) => {
   const { email, newPassword } = payload;
   const user = await UserModel.findOne({ email });
-  if (!user) throw new AppError(404, "User not found");
+  if (!user || user.isDeleted) throw new AppError(404, "User not found");
 
   user.password = newPassword;
   user.verificationCode = undefined;
@@ -143,7 +143,7 @@ const loginUser = async (payload: any) => {
 
 const resendOTP = async (email: string) => {
   const user = await UserModel.findOne({ email });
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
