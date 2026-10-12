@@ -57,6 +57,11 @@ lastBirthdayRewardYear?: number;
    isOnline?:boolean;
   verificationExpire?: Date;
   lastDailyClaimDate?: string | null; // ISO date string or null
+  isPremium?: boolean;
+  subscriptionPlan?: string;
+  subscriptionStatus?: 'active' | 'cancelled' | 'expired' | 'past_due' | 'none';
+  subscriptionExpiresAt?: Date | null;
+  shopifySubscriptionContractId?: string;
   createdAt: Date;
   updatedAt: Date
 };

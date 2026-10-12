@@ -10,7 +10,7 @@ const userSchema = new Schema<TUser, UserModelStatic>({
   fullName: { type: String },
     fcmToken: { type: String },
   memberNumber: { type: String, unique: true }, // e.g., #0001
-  role: { type: String, enum: ['superAdmin', 'admin', 'member', 'guest'], default: 'member' },
+  role: { type: String, enum: ['superAdmin', 'admin', 'member', 'guest'], default: 'guest' },
   status: { type: String, enum: ['active', 'inactive', 'blocked'], default: 'inactive' },
   blockedUntil: { type: Date },
   image: { type: String },
@@ -59,6 +59,15 @@ const userSchema = new Schema<TUser, UserModelStatic>({
   type: String, 
   default: null 
 },
+    isPremium: { type: Boolean, default: false },
+    subscriptionPlan: { type: String, default: '' },
+    subscriptionStatus: { 
+      type: String, 
+      enum: ['active', 'cancelled', 'expired', 'past_due', 'none'], 
+      default: 'none' 
+    },
+    subscriptionExpiresAt: { type: Date, default: null },
+    shopifySubscriptionContractId: { type: String, default: '' },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 

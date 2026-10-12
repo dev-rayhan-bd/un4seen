@@ -16,6 +16,7 @@ import {
   toggleAdminSelection 
 } from './shopify.service';
 import { AuthServices } from '../Auth/auth.services';
+import { processSubscriptionWebhook } from './shopifySubscription.service';
 
 const generateAdminToken = catchAsync(async (req: Request, res: Response) => {
   const { client_id, client_secret } = req.body;
@@ -163,12 +164,38 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
   // -----------------------------------
 
   const payload = req.body;
-  const email = payload?.email || payload?.customer?.email || payload?.order?.email;
+  const email = (
+    payload?.email ||
+    payload?.customer?.email ||
+    payload?.order?.email ||
+    payload?.customer_email
+  )?.toLowerCase()?.trim();
+
+  const shopifyCustomerId = (
+    payload?.customer?.id ||
+    payload?.customer_id ||
+    payload?.id
+  )?.toString();
+
   const rawOrderNumber = payload?.name || (payload?.order_number ? `#${payload.order_number}` : payload?.number ? `#${payload.number}` : '');
   const orderNumber = rawOrderNumber ? (rawOrderNumber.startsWith('#') ? rawOrderNumber : `#${rawOrderNumber}`) : 'N/A';
 
-  if (email && topic) {
-    const user = await UserModel.findOne({ email });
+  if (topic) {
+    // 1. Process subscription package catch / upgrade / downgrade logic
+    try {
+      await processSubscriptionWebhook(topic, payload);
+    } catch (subErr) {
+      console.error(`[ShopifySubscription] Error processing subscription webhook for topic ${topic}:`, subErr);
+    }
+
+    // 2. Existing order notifications & registration handling
+    let user = null;
+    if (email) {
+      user = await UserModel.findOne({ email });
+    }
+    if (!user && shopifyCustomerId) {
+      user = await UserModel.findOne({ shopifyCustomerId });
+    }
 
     if (user) {
       const userId = user._id.toString();
@@ -180,6 +207,7 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
           break;
 
         case 'orders/create':
+        case 'orders/paid':
           await sendNotification(
             userId,
             'Order Confirmed! 🏁',
@@ -208,7 +236,7 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
           break;
 
         default:
-          console.log(`Unhandled Shopify Webhook Topic: ${topic}`);
+          console.log(`Unhandled Shopify Webhook Notification Topic: ${topic}`);
           break;
       }
     } else {
@@ -216,7 +244,7 @@ const handleShopifyWebhook = catchAsync(async (req: Request, res: Response) => {
         // If user doesn't exist (expected for registration), we register them
         await AuthServices.registerFromShopify(payload);
       } else {
-        console.log(`User with email ${email} not found for Shopify Webhook topic ${topic}`);
+        console.log(`User with email/id ${email || shopifyCustomerId} not found for Shopify Webhook topic ${topic}`);
       }
     }
   }

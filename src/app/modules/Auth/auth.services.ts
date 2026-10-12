@@ -5,6 +5,7 @@ import { UserModel } from '../User/user.model';
 import sendEmail from '../../utils/sendEmail';
 import { getEmailTemplate } from '../../utils/emailTemplate';
 import { createToken, verifyToken } from './auth.utils';
+import { hasSubscriberTag } from '../Shopify/shopifySubscription.service';
 
 const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-8) + "@MX"; 
@@ -17,7 +18,8 @@ const registerFromShopify = async (payload: any) => {
   let user = await UserModel.findOne({ email });
 
   if (!user) {
-    const tempPassword = generateRandomPassword(); 
+    const tempPassword = generateRandomPassword();
+    const isSubscriber = hasSubscriberTag(payload?.tags);
 
     // auto hash by  pre-save 
     user = await UserModel.create({
@@ -27,6 +29,9 @@ const registerFromShopify = async (payload: any) => {
       shopifyCustomerId: id,
       password: tempPassword, 
       status: 'active', 
+      role: isSubscriber ? 'member' : 'guest',
+      isPremium: isSubscriber,
+      subscriptionStatus: isSubscriber ? 'active' : 'none',
     });
 
     // email template
@@ -156,6 +161,21 @@ const loginUser = async (payload: any) => {
     await UserModel.findByIdAndUpdate(user._id, { fcmToken: payload.fcmToken });
   }
 
+  // Check if subscription has expired
+  if (
+    user.role === 'member' &&
+    user.subscriptionExpiresAt &&
+    new Date(user.subscriptionExpiresAt).getTime() < Date.now()
+  ) {
+    await UserModel.findByIdAndUpdate(user._id, {
+      role: 'guest',
+      isPremium: false,
+      subscriptionStatus: 'expired',
+    });
+    user.role = 'guest';
+    user.isPremium = false;
+  }
+
   const jwtPayload = { userId: user._id!.toString(), role: user.role };
   const accessToken = createToken(jwtPayload, config.jwt_access_secret!, config.jwt_access_expires_in!);
   const refreshToken = createToken(jwtPayload, config.jwt_refresh_secret!, config.jwt_refresh_expires_in!);
@@ -213,6 +233,20 @@ const refreshToken = async (token: string) => {
     }
   }
 
+  // Check if subscription has expired
+  if (
+    user.role === 'member' &&
+    user.subscriptionExpiresAt &&
+    new Date(user.subscriptionExpiresAt).getTime() < Date.now()
+  ) {
+    await UserModel.findByIdAndUpdate(user._id, {
+      role: 'guest',
+      isPremium: false,
+      subscriptionStatus: 'expired',
+    });
+    user.role = 'guest';
+    user.isPremium = false;
+  }
 
   const jwtPayload = { userId: user._id.toString(), role: user.role };
   const accessToken = createToken(

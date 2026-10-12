@@ -45,7 +45,24 @@ const auth = (...requiredRoles: TUserRole[]) => {
       }
     }
 
-    if (requiredRoles && !requiredRoles.includes(role)) {
+    // Check if subscription has expired
+    if (
+      user.role === 'member' &&
+      user.subscriptionExpiresAt &&
+      new Date(user.subscriptionExpiresAt).getTime() < Date.now()
+    ) {
+      await UserModel.findByIdAndUpdate(user._id, {
+        role: 'guest',
+        isPremium: false,
+        subscriptionStatus: 'expired',
+      });
+      user.role = 'guest';
+      user.isPremium = false;
+    }
+
+    const currentRole = user.role || role;
+
+    if (requiredRoles && !requiredRoles.includes(currentRole)) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized !');
     }
 
@@ -59,7 +76,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized !');
     }
 
-    req.user = decodedUser as JwtPayload & { role: string };
+    req.user = { ...(decodedUser as any), role: currentRole };
     next();
   });
 };
