@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { todayNZ, nowNZDate } from '../../utils/nzTime';
+import { todayNZ, nowNZDate, startOfTodayNZ } from '../../utils/nzTime';
 import AppError from '../../errors/AppError';
 import { UserModel } from '../User/user.model';
 import { PointTransaction } from './points.model';
@@ -43,30 +43,59 @@ const addPoints = async (userId: string, source: TPointSource, customAmount?: nu
 
 
 const claimDailyPoints = async (userId: string) => {
-  const user = await UserModel.findById(userId);
   const today = todayNZ(); // NZ date
 
-  if (user?.lastDailyClaimDate === today) {
+  // Atomic update: only updates if user hasn't claimed today (prevents race-condition double claims)
+  const user = await UserModel.findOneAndUpdate(
+    {
+      _id: userId,
+      $or: [
+        { lastDailyClaimDate: { $ne: today } },
+        { lastDailyClaimDate: { $exists: false } },
+        { lastDailyClaimDate: null },
+      ],
+    },
+    {
+      $set: { lastDailyClaimDate: today },
+    },
+    { new: true }
+  );
+
+  if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Already claimed today');
   }
-
-  user!.lastDailyClaimDate = today;
-  await user!.save();
 
   return await addPoints(userId, 'daily_login', POINT_VALUES.DAILY_LOGIN);
 };
 
 
 const redeemPoints = async (userId: string) => {
-  const user = await UserModel.findById(userId);
-  if ((user?.shredPoints || 0) < POINT_VALUES.REDEEM_THRESHOLD) {
+  // Atomically check and deduct points first to prevent race-condition duplicate redemptions
+  const user = await UserModel.findOneAndUpdate(
+    {
+      _id: userId,
+      shredPoints: { $gte: POINT_VALUES.REDEEM_THRESHOLD },
+    },
+    {
+      $inc: { shredPoints: -POINT_VALUES.REDEEM_THRESHOLD },
+    },
+    { new: true }
+  );
+
+  if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Insufficient points');
   }
 
-  const discountCode = await createShopifyDiscountCode(POINT_VALUES.REDEEM_VALUE_USD);
-
-  user!.shredPoints! -= POINT_VALUES.REDEEM_THRESHOLD;
-  await user!.save();
+  let discountCode: string;
+  try {
+    discountCode = await createShopifyDiscountCode(POINT_VALUES.REDEEM_VALUE_USD);
+  } catch (error) {
+    // If Shopify discount creation fails, rollback points immediately
+    await UserModel.findByIdAndUpdate(userId, {
+      $inc: { shredPoints: POINT_VALUES.REDEEM_THRESHOLD },
+    });
+    throw error;
+  }
 
   await PointTransaction.create({
     user: userId,
@@ -83,12 +112,27 @@ const redeemPoints = async (userId: string) => {
     'promo'
   );
 
-  return { discountCode, balance: user!.shredPoints };
+  return { discountCode, balance: user.shredPoints };
 };
 
 
 const handleSocialShare = async (userId: string, platform: string) => {
-  return await addPoints(userId, `share_${platform}` as TPointSource, POINT_VALUES.SOCIAL_SHARE);
+  const source = `share_${platform}` as TPointSource;
+  const startOfDay = startOfTodayNZ();
+
+  // Rate-limit share rewards to once per platform per NZ day to prevent automated spamming
+  const alreadyEarnedToday = await PointTransaction.findOne({
+    user: userId,
+    source,
+    createdAt: { $gte: startOfDay },
+  });
+
+  if (alreadyEarnedToday) {
+    const user = await UserModel.findById(userId);
+    return user?.shredPoints || 0;
+  }
+
+  return await addPoints(userId, source, POINT_VALUES.SOCIAL_SHARE);
 };
 const getMyPointHistoryFromDB = async (userId: string, query: Record<string, unknown>) => {
   const pointQuery = new QueryBuilder(
@@ -191,55 +235,64 @@ const claimMilestoneReward = async (userId: string, milestoneId: string) => {
 
   if (!milestone) throw new AppError(httpStatus.NOT_FOUND, "Milestone not found");
   if ((user?.shredPoints || 0) < milestone.pointsRequired) {
-  throw new AppError(httpStatus.BAD_REQUEST, "Insufficient points to claim this reward");
+    throw new AppError(httpStatus.BAD_REQUEST, "Insufficient points to claim this reward");
   }
 
   const alreadyClaimed = await ClaimedMilestone.findOne({ user: userId, milestone: milestoneId });
   if (alreadyClaimed) throw new AppError(httpStatus.BAD_REQUEST, "Already claimed");
 
-  const result = await ClaimedMilestone.create({
-    user: userId,
-    milestone: milestoneId
-  });
-
-  return result;
+  try {
+    const result = await ClaimedMilestone.create({
+      user: userId,
+      milestone: milestoneId,
+    });
+    return result;
+  } catch (error: any) {
+    if (error.code === 11000) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Already claimed");
+    }
+    throw error;
+  }
 };
 
 
 const claimProfileCompletionPoints = async (userId: string) => {
-  const user = await UserModel.findById(userId);
+  // Atomically lock isProfileBonusClaimed and award bonus points to prevent double claim
+  const user = await UserModel.findOneAndUpdate(
+    {
+      _id: userId,
+      isProfileComplete: true,
+      $or: [
+        { isProfileBonusClaimed: false },
+        { isProfileBonusClaimed: { $exists: false } },
+        { isProfileBonusClaimed: null },
+      ],
+    },
+    {
+      $set: { isProfileBonusClaimed: true },
+      $inc: { shredPoints: POINT_VALUES.PROFILE_COMPLETION },
+    },
+    { new: true }
+  );
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  if (!user.isProfileComplete) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Profile is not 100% complete yet');
-  }
-
-
-  const alreadyClaimed = await PointTransaction.findOne({
-    user: userId,
-    source: 'profile_completion'
-  });
-
-  if (alreadyClaimed) {
+    const existing = await UserModel.findById(userId);
+    if (!existing) {
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    }
+    if (!existing.isProfileComplete) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Profile is not 100% complete yet');
+    }
     throw new AppError(httpStatus.BAD_REQUEST, 'You have already claimed your profile completion bonus');
   }
 
-
   const bonusPoints = POINT_VALUES.PROFILE_COMPLETION;
-  user.shredPoints = (user.shredPoints || 0) + bonusPoints;
-   user.isProfileBonusClaimed = true; 
-  await user.save();
-
   const transaction = await PointTransaction.create({
     user: userId,
     points: bonusPoints,
     source: 'profile_completion',
-    description: 'Bonus points for 100% profile completion'
+    description: 'Bonus points for 100% profile completion',
   });
-
 
   await sendNotification(
     userId,
@@ -249,7 +302,7 @@ const claimProfileCompletionPoints = async (userId: string) => {
 
   return {
     newBalance: user.shredPoints,
-    transaction
+    transaction,
   };
 };
 
@@ -296,7 +349,6 @@ const checkAndAwardBirthdayReward = async (userId: string) => {
 
 
 const applyReferralCode = async (currentUserId: string, code: string) => {
- 
   const referee = await UserModel.findById(currentUserId);
   if (!referee) throw new AppError(httpStatus.NOT_FOUND, "User not found");
   
@@ -308,19 +360,38 @@ const applyReferralCode = async (currentUserId: string, code: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, "You have already used a referral code!");
   }
 
-
   const referrer = await UserModel.findOne({ referralCode: code });
   if (!referrer) {
     throw new AppError(httpStatus.NOT_FOUND, "Invalid referral code!");
   }
 
+  const receiverPoints = POINT_VALUES.REFERRAL_RECEIVER; 
+
+  // Atomically claim referral for referee to prevent double redemption under concurrency
+  const updatedReferee = await UserModel.findOneAndUpdate(
+    {
+      _id: currentUserId,
+      $or: [
+        { referredBy: { $exists: false } },
+        { referredBy: null }
+      ]
+    },
+    {
+      $set: { referredBy: referrer._id },
+      $inc: { shredPoints: receiverPoints }
+    },
+    { new: true }
+  );
+
+  if (!updatedReferee) {
+    throw new AppError(httpStatus.BAD_REQUEST, "You have already used a referral code!");
+  }
 
   const senderPoints = POINT_VALUES.REFERRAL_SENDER; 
   await UserModel.findByIdAndUpdate(referrer._id, {
     $inc: { shredPoints: senderPoints, referralCount: 1 },
     $addToSet: { referrals: currentUserId }
   });
-
 
   await PointTransaction.create({
     user: referrer._id,
@@ -329,21 +400,12 @@ const applyReferralCode = async (currentUserId: string, code: string) => {
     description: `Earned ${senderPoints} points for inviting a friend.`,
   });
 
-
-  const receiverPoints = POINT_VALUES.REFERRAL_RECEIVER; 
-  await UserModel.findByIdAndUpdate(currentUserId, {
-    $inc: { shredPoints: receiverPoints },
-    referredBy: referrer._id
-  });
-
-
   await PointTransaction.create({
     user: currentUserId,
     points: receiverPoints,
     source: 'referral' as any,
     description: `Received ${receiverPoints} welcome points from referral code.`,
   });
-
 
   await sendNotification(referrer._id.toString(), 'Referral Success! 🏁', `Your friend joined! You earned ${senderPoints} points.`);
   await sendNotification(currentUserId, 'Welcome Bonus! 🎉', `You've received ${receiverPoints} points for using a referral code!`);

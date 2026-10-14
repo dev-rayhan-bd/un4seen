@@ -44,12 +44,18 @@ const claimMilestoneInDB = async (userId: string, milestoneId: string) => {
   }
 
 
-  const result = await ClaimedCommunityMilestone.create({
-    user: userId,
-    milestone: milestoneId
-  });
-
-  return result;
+  try {
+    const result = await ClaimedCommunityMilestone.create({
+      user: userId,
+      milestone: milestoneId
+    });
+    return result;
+  } catch (error: any) {
+    if (error.code === 11000) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'You have already claimed this reward!');
+    }
+    throw error;
+  }
 };
 export const CommunityMilestoneServices = {
   createMilestoneIntoDB,

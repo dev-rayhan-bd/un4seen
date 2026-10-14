@@ -1,5 +1,7 @@
 import { UserModel } from '../User/user.model';
 import { sendNotification } from '../../utils/sendNotification';
+import sendEmail from '../../utils/sendEmail';
+import { getEmailTemplate } from '../../utils/emailTemplate';
 
 // Strict keywords for customer tags
 const SUBSCRIBER_TAG_KEYWORDS = [
@@ -12,6 +14,7 @@ const SUBSCRIBER_TAG_KEYWORDS = [
   'member',
   'vip',
   'premium',
+  'syndicate',
 ];
 
 const CANCELLATION_TAG_KEYWORDS = [
@@ -36,9 +39,13 @@ export const isSubscriptionLineItem = (item: any): boolean => {
     return true;
   }
 
-  // 2. Strict check: explicitly titled subscription or membership
-  const title = (item.title || item.name || '').toLowerCase();
-  if (title.includes('subscription') || title.includes('membership')) {
+  // 2. Flexible check: explicitly titled subscription, membership, or syndicate
+  const text = `${item.title || ''} ${item.name || ''} ${item.variant_title || ''} ${item.product_type || ''}`.toLowerCase();
+  if (
+    text.includes('subscription') ||
+    text.includes('membership') ||
+    text.includes('syndicate')
+  ) {
     return true;
   }
 
@@ -125,12 +132,88 @@ export const upgradeUserToMember = async (
     durationDays?: number;
     contractId?: string;
     expiresAt?: Date;
+    firstName?: string;
+    lastName?: string;
   }
 ) => {
-  const user = await findTargetUser(criteria);
+  let user = await findTargetUser(criteria);
   if (!user) {
-    console.warn(`[ShopifySubscription] User not found for upgrade: ${JSON.stringify(criteria)}`);
-    return null;
+    if (criteria.email) {
+      console.log(`[ShopifySubscription] User not found for upgrade. Auto-creating account for ${criteria.email}`);
+      const tempPassword = Math.random().toString(36).slice(-8) + '@MX';
+      const durationDays = details?.durationDays || 30;
+      const expiresAt =
+        details?.expiresAt || new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+      const fName = details?.firstName || 'Syndicate';
+      const lName = details?.lastName || 'Member';
+
+      try {
+        user = await UserModel.create({
+          email: criteria.email.toLowerCase().trim(),
+          firstName: fName,
+          lastName: lName,
+          shopifyCustomerId: criteria.shopifyCustomerId,
+          password: tempPassword,
+          status: 'active',
+          role: 'member',
+          isPremium: true,
+          subscriptionStatus: 'active',
+          subscriptionPlan: details?.planName || 'Syndicate Membership',
+          subscriptionExpiresAt: expiresAt,
+          shopifySubscriptionContractId: details?.contractId || '',
+        });
+
+        console.log(`[ShopifySubscription] Auto-created new member: ${user.email}`);
+
+        // Send welcome credentials email
+        const html = getEmailTemplate({
+          userName: user.firstName,
+          title: 'WELCOME TO THE SYNDICATE',
+          body: `
+            <p style="color: #f3f4f6 !important; font-size: 15px; line-height: 1.6; margin: 0 0 22px 0;">
+              Your Syndicate Membership has been activated! You can now access exclusive Syndicate features in the app using the credentials below:
+            </p>
+            
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 440px; margin: 20px auto; background-color: #1a1a1a; border: 1px solid #333333; border-radius: 8px; text-align: left;">
+              <tr>
+                <td style="padding: 16px 20px; border-bottom: 1px solid #2a2a2a;">
+                  <div style="color: #cbd5e1 !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Email Address</div>
+                  <div style="color: #00A3FF !important; font-size: 15px; font-weight: 600; word-break: break-all;">${user.email}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 16px 20px;">
+                  <div style="color: #cbd5e1 !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Temporary Password</div>
+                  <div>
+                    <span style="color: #ffffff !important; font-size: 16px; font-weight: 700; font-family: 'Courier New', Courier, monospace; letter-spacing: 1.5px; background-color: #0a0a0a; border: 1px solid #00A3FF; padding: 6px 14px; border-radius: 4px; display: inline-block;">${tempPassword}</span>
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <p style="color: #cbd5e1 !important; font-size: 13px; font-style: italic; line-height: 1.5; margin: 20px 0 0 0;">
+              Note: For security, we recommend changing your password from your profile settings after your first login.
+            </p>
+          `,
+          buttonText: 'OPEN THE APP',
+          buttonLink: 'https://your-app-download-link.com'
+        });
+
+        await sendEmail({
+          to: user.email,
+          subject: 'Your Syndicate Membership Credentials',
+          html,
+        });
+
+        return user;
+      } catch (createErr) {
+        console.error('[ShopifySubscription] Error auto-creating member user:', createErr);
+        return null;
+      }
+    } else {
+      console.warn(`[ShopifySubscription] User not found for upgrade: ${JSON.stringify(criteria)}`);
+      return null;
+    }
   }
 
   const userId = user._id.toString();
@@ -292,11 +375,21 @@ export const processSubscriptionWebhook = async (topic: string, payload: any) =>
       if (subItem) {
         const planName = subItem.title || subItem.name || 'Syndicate Membership';
         const durationDays = parseSubscriptionDuration(subItem);
+        const firstName =
+          payload?.customer?.first_name ||
+          payload?.billing_address?.first_name ||
+          payload?.shipping_address?.first_name;
+        const lastName =
+          payload?.customer?.last_name ||
+          payload?.billing_address?.last_name ||
+          payload?.shipping_address?.last_name;
 
         console.log(`[ShopifySubscription] Subscription detected in order: "${planName}"`);
         await upgradeUserToMember(criteria, {
           planName,
           durationDays,
+          firstName,
+          lastName,
         });
       }
       break;

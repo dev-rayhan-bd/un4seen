@@ -5,7 +5,7 @@ import { UserModel } from '../User/user.model';
 import sendEmail from '../../utils/sendEmail';
 import { getEmailTemplate } from '../../utils/emailTemplate';
 import { createToken, verifyToken } from './auth.utils';
-import { hasSubscriberTag } from '../Shopify/shopifySubscription.service';
+import { hasSubscriberTag, hasCancellationTag } from '../Shopify/shopifySubscription.service';
 
 const generateRandomPassword = () => {
   return Math.random().toString(36).slice(-8) + "@MX"; 
@@ -13,25 +13,26 @@ const generateRandomPassword = () => {
 
 const registerFromShopify = async (payload: any) => {
   const { email, first_name, last_name, id } = payload;
-  
 
-  let user = await UserModel.findOne({ email });
+  let user = await UserModel.findOne({ email: email?.toLowerCase()?.trim() });
 
   if (!user) {
     const tempPassword = generateRandomPassword();
     const isSubscriber = hasSubscriberTag(payload?.tags);
+    const expiresAt = isSubscriber ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
 
-    // auto hash by  pre-save 
+    // auto hash by pre-save 
     user = await UserModel.create({
-      email,
-      firstName: first_name,
-      lastName: last_name,
+      email: email?.toLowerCase()?.trim(),
+      firstName: first_name || 'Syndicate',
+      lastName: last_name || 'Member',
       shopifyCustomerId: id,
       password: tempPassword, 
       status: 'active', 
       role: isSubscriber ? 'member' : 'guest',
       isPremium: isSubscriber,
       subscriptionStatus: isSubscriber ? 'active' : 'none',
+      subscriptionExpiresAt: expiresAt,
     });
 
     // email template
@@ -68,12 +69,46 @@ const registerFromShopify = async (payload: any) => {
       buttonLink: "https://your-app-download-link.com" // app store link
     });
 
-
     await sendEmail({ 
         to: email, 
         subject: "Your Syndicate Account Credentials", 
         html 
     });
+  } else {
+    // Existing user: Upgrade to member if they have subscriber tags
+    const isSubscriber = hasSubscriberTag(payload?.tags);
+    if (isSubscriber) {
+      const isElevatedRole = user.role === 'admin' || user.role === 'superAdmin';
+      const newRole = isElevatedRole ? user.role : 'member';
+
+      const baseDate =
+        user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt).getTime() > Date.now()
+          ? new Date(user.subscriptionExpiresAt)
+          : new Date();
+      const expiresAt = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      user = await UserModel.findByIdAndUpdate(
+        user._id,
+        {
+          role: newRole,
+          isPremium: true,
+          subscriptionStatus: 'active',
+          subscriptionExpiresAt: expiresAt,
+          ...(id && !user.shopifyCustomerId ? { shopifyCustomerId: id.toString() } : {}),
+        },
+        { new: true }
+      );
+    } else if (hasCancellationTag(payload?.tags) && user.role === 'member') {
+      user = await UserModel.findByIdAndUpdate(
+        user._id,
+        {
+          role: 'guest',
+          isPremium: false,
+          subscriptionStatus: 'cancelled',
+        },
+        { new: true }
+      );
+    }
   }
 
   return user;

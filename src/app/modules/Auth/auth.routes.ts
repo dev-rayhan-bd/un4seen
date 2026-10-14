@@ -5,16 +5,30 @@ import { USER_ROLE } from './auth.constant';
 import validateRequest from '../../middleware/validateRequest';
 import { AuthValidation } from './authValidation';
 
+import rateLimit from 'express-rate-limit';
+
 const router = express.Router();
 
-router.post('/login', AuthControllers.login);
+// Strict rate limiter for authentication & OTP to prevent brute-force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.',
+  },
+});
+
+router.post('/login', authLimiter, AuthControllers.login);
 
 //call after successfull payment from shopify 
 router.post('/shopify-sync', AuthControllers.shopifyWebhook);
-router.post('/forgot-password', AuthControllers.forgotPassword);
-router.post('/verify-otp', AuthControllers.verifyOTP);
-router.post('/reset-password', AuthControllers.resetPassword);
-router.post('/resend-otp', AuthControllers.resendOTP);
+router.post('/forgot-password', authLimiter, AuthControllers.forgotPassword);
+router.post('/verify-otp', authLimiter, AuthControllers.verifyOTP);
+router.post('/reset-password', authLimiter, AuthControllers.resetPassword);
+router.post('/resend-otp', authLimiter, AuthControllers.resendOTP);
 router.post('/refresh-token', AuthControllers.refreshToken);
 
 

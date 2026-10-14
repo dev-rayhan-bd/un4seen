@@ -6,6 +6,8 @@ import { TGiveaway } from './giveaway.interface';
 import { computeDateBasedStatus } from '../../utils/computeDateBasedStatus';
 import { nowNZDate } from '../../utils/nzTime';
 
+import { UserModel } from '../User/user.model';
+
 const updateExpiredGiveaways = async () => {
   const now = nowNZDate(); // NZ time
   await Giveaway.updateMany(
@@ -102,6 +104,9 @@ const createGiveawayIntoDB = async (payload: TGiveaway) => {
 const updateGiveawayWinnerInDB = async (id: string, winnerId: string) => {
   const giveaway = await Giveaway.findById(id);
   if (!giveaway) throw new AppError(httpStatus.NOT_FOUND, 'Giveaway not found');
+
+  const winnerUser = await UserModel.findById(winnerId);
+  if (!winnerUser) throw new AppError(httpStatus.NOT_FOUND, 'Winner user not found');
 
   const result = await Giveaway.findByIdAndUpdate(
     id,
