@@ -148,6 +148,11 @@ const getCompleteProfileData = async (targetId: string, viewerId: string) => {
 
   return {
     ...userObj,
+    isPremium:
+      Boolean(userObj.isPremium) ||
+      userObj.role === 'member' ||
+      userObj.role === 'admin' ||
+      userObj.role === 'superAdmin',
     activeBike: activeBike || null, 
     journey: {
       memberSince: joinDate.format('MMMM YYYY'),
