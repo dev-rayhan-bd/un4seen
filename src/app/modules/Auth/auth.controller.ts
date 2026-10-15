@@ -6,14 +6,30 @@ import { Request, Response } from 'express';
 
 const login = catchAsync(async (req, res) => {
   const result = await AuthServices.loginUser(req.body);
+
+  const isPremium =
+    result.user?.isPremium === true ||
+    result.user?.role === 'member' ||
+    result.user?.role === 'admin' ||
+    result.user?.role === 'superAdmin';
+
+  const userObj =
+    result.user && typeof (result.user as any).toObject === 'function'
+      ? (result.user as any).toObject()
+      : result.user;
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: 'Login successful',
     data: {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken, 
-      user: result.user,
+      refreshToken: result.refreshToken,
+      isPremium,
+      user: {
+        ...userObj,
+        isPremium,
+      },
     },
   });
 });
