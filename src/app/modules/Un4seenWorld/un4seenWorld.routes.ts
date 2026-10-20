@@ -5,7 +5,7 @@ import { Un4seenWorldControllers } from './un4seenWorld.controller';
 
 const router = express.Router();
 
-router.get('/', auth('member', 'admin', 'superAdmin'), Un4seenWorldControllers.getAllBrands);
+router.get('/', auth('member', 'admin', 'superAdmin', 'guest'), Un4seenWorldControllers.getAllBrands);
 
 router.post(
   '/create',

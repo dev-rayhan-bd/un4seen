@@ -9,26 +9,26 @@ import { upload } from '../../middleware/multer';
 const router = express.Router();
 
 
-router.get('/my-chats', auth(USER_ROLE.member, USER_ROLE.admin), ChannelControllers.getMyChats);
+router.get('/my-chats', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), ChannelControllers.getMyChats);
 
 router.post('/private', auth(USER_ROLE.member), validateRequest(ChannelValidations.startPrivateChatSchema), ChannelControllers.startPrivateChat);
 router.post('/create', auth(USER_ROLE.member, USER_ROLE.admin), validateRequest(ChannelValidations.createGroupSchema), ChannelControllers.createGroup);
-router.get('/sidebar', auth('member', 'admin'), ChannelControllers.getMyJoinedChannels);
-router.get('/search-all', auth('member', 'admin'), ChannelControllers.searchChannels);
+router.get('/sidebar', auth('member', 'admin', 'guest'), ChannelControllers.getMyJoinedChannels);
+router.get('/search-all', auth('member', 'admin', 'guest'), ChannelControllers.searchChannels);
 router.post('/request-join', auth('member'), ChannelControllers.requestToJoin);
 router.get('/requests/:channelId', auth('member', 'admin'), ChannelControllers.getJoinRequests);
 router.patch('/handle-request', auth('member', 'admin'), ChannelControllers.actionOnRequest);
 router.get(
   '/private-history/:otherUserId', 
-  auth('member', 'admin'), 
+  auth('member', 'admin', 'guest'), 
   ChannelControllers.getPrivateHistory
 );
 router.get(
   '/search-riders', 
-  auth('member', 'admin', 'superAdmin'), 
+  auth('member', 'admin', 'superAdmin', 'guest'), 
   ChannelControllers.searchRiders
 );
-router.get('/:id/messages', auth(USER_ROLE.member, USER_ROLE.admin), ChannelControllers.getMessages);
+router.get('/:id/messages', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), ChannelControllers.getMessages);
 
 router.post('/report', auth(USER_ROLE.member), ChannelControllers.reportMessage);
 
@@ -61,7 +61,7 @@ router.post(
   upload.single('file'), 
   ChannelControllers.uploadAttachment
 );
-router.get('/:id/members', auth('member', 'admin'), ChannelControllers.getChannelMembers);
+router.get('/:id/members', auth('member', 'admin', 'guest'), ChannelControllers.getChannelMembers);
 router.patch(
   '/manage-members',
   auth(USER_ROLE.member, USER_ROLE.admin),

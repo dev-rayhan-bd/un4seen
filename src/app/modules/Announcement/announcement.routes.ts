@@ -30,19 +30,19 @@ router.get(
 
 router.patch(
   '/:id/heart',
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest),
   AnnouncementControllers.toggleHeart
 );
 
 router.post(
   '/:id/save',
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest),
   AnnouncementControllers.toggleSaveAnnouncement
 );
 
 router.get(
   '/my-saved',
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest),
   AnnouncementControllers.getSavedAnnouncements
 );
 
