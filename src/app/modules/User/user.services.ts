@@ -211,7 +211,7 @@ const getHomePageDataFromDB = async (userId: string) => {
     { $set: { status: 'completed' } }
   );
 
-  const user = await UserModel.findById(userId).select('firstName lastName fullName image memberNumber status');
+  const user = await UserModel.findById(userId).select('firstName lastName fullName image memberNumber status role isPremium');
 
 //weekly giveawaqy
   const weeklyGiveaway = await Giveaway.findOne({ 
@@ -255,7 +255,7 @@ const getHomePageDataFromDB = async (userId: string) => {
     user: {
       fullName: user?.fullName,
       image: user?.image,
-      isSyndicateMember: user?.status === 'active'
+      isSyndicateMember: user?.isPremium === true || user?.role === 'member' || user?.role === 'admin' || user?.role === 'superAdmin'
     },
     weeklyGiveaway: weeklyGiveaway ? {
         ...weeklyGiveaway.toObject(),

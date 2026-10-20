@@ -7,7 +7,7 @@ import { UserControllers } from './user.controller';
 
 const router = express.Router();
 
-router.get('/my-profile', auth(USER_ROLE.member, USER_ROLE.superAdmin, USER_ROLE.admin),UserControllers.getMyProfile);
+router.get('/my-profile', auth(USER_ROLE.member, USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.guest), UserControllers.getMyProfile);
 router.get(
   '/all-members',
   auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
@@ -15,7 +15,7 @@ router.get(
 );
 router.patch(
   '/update-profile',
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest),
   upload.single('image'), 
   (req: Request, res: Response, next: NextFunction) => {
    
@@ -47,7 +47,7 @@ router.get(
   UserControllers.getMyFollowing
 );
 router.get('/home-feed',
-   auth('member', 'admin'), 
+   auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), 
    UserControllers.getHomePageData);
 router.patch(
   '/follow/:id',
@@ -65,7 +65,7 @@ router.get('/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getS
 router.get('/followers/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowersList);
 router.get('/following/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowingList);
 
-router.delete('/my-account', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), UserControllers.deleteMyAccount);
+router.delete('/my-account', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), UserControllers.deleteMyAccount);
 router.delete('/:id', auth(USER_ROLE.admin, USER_ROLE.superAdmin), UserControllers.deleteUser);
 
 export const UserRoutes = router;
