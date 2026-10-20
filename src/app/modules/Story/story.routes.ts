@@ -24,11 +24,11 @@ router.post(
 );
 
 router.get('/', auth('member', 'admin', 'guest'), StoryControllers.getStories);
-router.patch('/:id/heart', auth('member', 'admin'), StoryControllers.toggleHeart);
+router.patch('/:id/heart', auth('member', 'admin', 'guest'), StoryControllers.toggleHeart);
 
-router.post('/:id/save', auth('member', 'admin'), StoryControllers.toggleSaveStory);
+router.post('/:id/save', auth('member', 'admin', 'guest'), StoryControllers.toggleSaveStory);
 
 
-router.get('/my-saved', auth('member', 'admin'), StoryControllers.getSavedStories);
+router.get('/my-saved', auth('member', 'admin', 'guest'), StoryControllers.getSavedStories);
 router.delete('/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), StoryControllers.deleteStory);
 export const StoryRoutes = router;

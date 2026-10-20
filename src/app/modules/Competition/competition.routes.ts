@@ -22,7 +22,7 @@ router.post(
 
 router.patch(
   '/entry/:id/heart',
-  auth(USER_ROLE.member, USER_ROLE.admin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest),
   CompetitionControllers.toggleHeartEntry
 );
 
@@ -32,7 +32,7 @@ router.get('/running', CompetitionControllers.getRunningCompetition);
 
 
 
-router.get('/gallery/:id',auth(USER_ROLE.member, USER_ROLE.admin), CompetitionControllers.getGallery);
+router.get('/gallery/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), CompetitionControllers.getGallery);
 
 router.get('/leaderboard/:id', CompetitionControllers.getLeaderboard);
 

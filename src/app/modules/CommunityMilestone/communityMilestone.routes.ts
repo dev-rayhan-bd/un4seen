@@ -6,7 +6,7 @@ import { USER_ROLE } from '../Auth/auth.constant';
 
 const router = express.Router();
 
-router.get('/', auth(USER_ROLE.member, USER_ROLE.admin), CommunityMilestoneControllers.getAllMilestones);
+router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), CommunityMilestoneControllers.getAllMilestones);
 
 router.post(
   '/create',

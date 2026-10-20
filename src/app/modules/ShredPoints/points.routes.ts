@@ -5,30 +5,30 @@ import { upload } from '../../middleware/multer';
 
 const router = express.Router();
 
-router.post('/daily-claim', auth('member', 'admin'), PointControllers.claimDaily);
-router.post('/redeem', auth('member', 'admin'), PointControllers.redeem);
-router.post('/social-share', auth('member', 'admin'), PointControllers.socialShare);
+router.post('/daily-claim', auth('member', 'admin', 'guest'), PointControllers.claimDaily);
+router.post('/redeem', auth('member', 'admin', 'guest'), PointControllers.redeem);
+router.post('/social-share', auth('member', 'admin', 'guest'), PointControllers.socialShare);
 router.get(
   '/my-history', 
-  auth('member', 'admin'), 
+  auth('member', 'admin', 'guest'), 
   PointControllers.getMyHistory
 );
-router.get('/dashboard', auth('member', 'admin'), PointControllers.getDashboard);
+router.get('/dashboard', auth('member', 'admin', 'guest'), PointControllers.getDashboard);
 router.post('/claim-milestone', auth('member'), PointControllers.claimMilestone);
 router.post(
   '/claim-profile-bonus', 
-  auth('member', 'admin'), 
+  auth('member', 'admin', 'guest'), 
   PointControllers.claimProfileBonus
 );
 
 router.post(
   '/apply-referral', 
-  auth('member', 'admin'), 
+  auth('member', 'admin', 'guest'), 
   PointControllers.applyReferral
 );
 router.get(
   '/referral-stats',
-  auth('member', 'admin', 'superAdmin'),
+  auth('member', 'admin', 'superAdmin', 'guest'),
   PointControllers.getReferralStats
 );
 router.post(
@@ -57,5 +57,5 @@ router.patch(
     PointControllers.adminUpdateUserPoints
 );
 
-router.get('/my-codes', auth('member', 'admin'), PointControllers.getMyRedeemedCodes);
+router.get('/my-codes', auth('member', 'admin', 'guest'), PointControllers.getMyRedeemedCodes);
 export const PointRoutes = router;

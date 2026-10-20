@@ -13,7 +13,7 @@ router.post(
   CrewChoiceControllers.createPoll
 );
 
-router.get('/', auth('member', 'admin', 'superAdmin'), CrewChoiceControllers.getPolls);
+router.get('/', auth('member', 'admin', 'superAdmin', 'guest'), CrewChoiceControllers.getPolls);
 
 router.patch(
   '/vote', 
@@ -21,5 +21,5 @@ router.patch(
   validateRequest(CrewChoiceValidations.voteSchema), 
   CrewChoiceControllers.votePoll
 );
-router.get('/past-results', auth('member', 'admin','superAdmin'), CrewChoiceControllers.getPastPolls);
+router.get('/past-results', auth('member', 'admin', 'superAdmin', 'guest'), CrewChoiceControllers.getPastPolls);
 export const CrewChoiceRoutes = router;

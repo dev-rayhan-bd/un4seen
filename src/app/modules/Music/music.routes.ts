@@ -11,18 +11,18 @@ router.post('/upload',
     upload.single('audio'), MusicControllers.uploadMusic);
 
 
-router.get('/', auth('member', 'admin','superAdmin'), MusicControllers.getMusicLibrary);
+router.get('/', auth('member', 'admin', 'superAdmin', 'guest'), MusicControllers.getMusicLibrary);
 
 
-router.post('/favorite/:id', auth('member','superAdmin'), MusicControllers.toggleFavorite);
+router.post('/favorite/:id', auth('member', 'superAdmin', 'guest'), MusicControllers.toggleFavorite);
 
-router.get('/categories', auth('member', 'admin','superAdmin'), MusicControllers.getCategories);
+router.get('/categories', auth('member', 'admin', 'superAdmin', 'guest'), MusicControllers.getCategories);
 
 
 router.delete('/:id', auth('admin', 'superAdmin','superAdmin'), MusicControllers.deleteMusic);
 router.get(
   '/my-favorites', 
-  auth('member', 'admin','superAdmin'), 
+  auth('member', 'admin', 'superAdmin', 'guest'), 
   MusicControllers.getMyFavorites
 );
 export const MusicRoutes = router;

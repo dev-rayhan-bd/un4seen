@@ -5,7 +5,7 @@ import { MilestoneControllers } from './milestone.controller';
 
 const router = express.Router();
 
-router.get('/', auth('member', 'admin', 'superAdmin'), MilestoneControllers.getAllMilestones);
+router.get('/', auth('member', 'admin', 'superAdmin', 'guest'), MilestoneControllers.getAllMilestones);
 
 router.post(
   '/create',

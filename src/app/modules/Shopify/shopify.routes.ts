@@ -28,7 +28,7 @@ router.get('/app-store', ShopifyControllers.getAppStoreFeed);
 // --- Shopify Order Tracking & Webhook Routes ---
 router.get(
   '/my-orders',
-  auth(USER_ROLE.member, USER_ROLE.admin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest),
   ShopifyControllers.getMyOrders
 );
 

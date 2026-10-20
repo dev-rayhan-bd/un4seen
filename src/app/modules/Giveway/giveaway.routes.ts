@@ -26,7 +26,7 @@ router.get(
 );
 router.get(
   '/:id', 
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), 
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), 
   GiveawayControllers.getSingleGiveaway
 );
 
