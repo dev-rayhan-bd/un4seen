@@ -21,7 +21,7 @@ router.post(
   PostControllers.createPost
 );
 
-router.patch('/:id/like', auth('member'), PostControllers.handleLike);
-router.post('/comment', auth('member'), validateRequest(PostValidations.createCommentSchema), PostControllers.addComment);
+router.patch('/:id/like', auth('member', 'admin', 'guest'), PostControllers.handleLike);
+router.post('/comment', auth('member', 'admin', 'guest'), validateRequest(PostValidations.createCommentSchema), PostControllers.addComment);
 
 export const PostRoutes = router;

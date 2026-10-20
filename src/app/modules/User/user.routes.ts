@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/my-profile', auth(USER_ROLE.member, USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.guest), UserControllers.getMyProfile);
 router.get(
   '/all-members',
-  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest),
   UserControllers.getAllMembers
 );
 router.patch(
@@ -28,7 +28,7 @@ router.patch(
 );
 router.get(
   '/my-followers', 
-  auth(USER_ROLE.member, USER_ROLE.admin), 
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), 
   UserControllers.getMyFollowers
 );
 router.patch(
@@ -43,7 +43,7 @@ router.patch(
 );
 router.get(
   '/my-following', 
-  auth(USER_ROLE.member, USER_ROLE.admin), 
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), 
   UserControllers.getMyFollowing
 );
 router.get('/home-feed',
@@ -51,19 +51,19 @@ router.get('/home-feed',
    UserControllers.getHomePageData);
 router.patch(
   '/follow/:id',
-  auth(USER_ROLE.member, USER_ROLE.admin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest),
   UserControllers.followUser
 );
 
 router.patch(
   '/unfollow/:id',
-  auth(USER_ROLE.member, USER_ROLE.admin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest),
   UserControllers.unfollowUser
 );
-router.get('/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getSingleUser);
+router.get('/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest, USER_ROLE.superAdmin), UserControllers.getSingleUser);
 
-router.get('/followers/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowersList);
-router.get('/following/:id', auth(USER_ROLE.member, USER_ROLE.admin), UserControllers.getFollowingList);
+router.get('/followers/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), UserControllers.getFollowersList);
+router.get('/following/:id', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest), UserControllers.getFollowingList);
 
 router.delete('/my-account', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), UserControllers.deleteMyAccount);
 router.delete('/:id', auth(USER_ROLE.admin, USER_ROLE.superAdmin), UserControllers.deleteUser);

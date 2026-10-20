@@ -24,11 +24,11 @@ router.delete(
   auth(USER_ROLE.member, USER_ROLE.admin), 
   RideControllers.deleteRide
 );
-router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getAllRides);
+router.get('/', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), RideControllers.getAllRides);
 
 router.get(
   '/my-rides',
-  auth(USER_ROLE.member, USER_ROLE.admin),
+  auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.guest),
   RideControllers.getMyRides
 );
 
@@ -39,7 +39,7 @@ router.patch(
   RideControllers.submitVote
 );
 
-router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin), RideControllers.getLeaderboard);
+router.get('/leaderboard', auth(USER_ROLE.member, USER_ROLE.admin, USER_ROLE.superAdmin, USER_ROLE.guest), RideControllers.getLeaderboard);
 
 router.patch('/:id/set-winner',
    auth(USER_ROLE.admin, USER_ROLE.superAdmin),

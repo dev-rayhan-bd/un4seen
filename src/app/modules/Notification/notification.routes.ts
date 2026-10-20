@@ -10,21 +10,21 @@ const router = express.Router();
 
 router.get(
   '/', 
-  auth(USER_ROLE.superAdmin, USER_ROLE.admin,USER_ROLE.member), 
+  auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.member, USER_ROLE.guest), 
   NotificationControllers.getMyNotifications
 );
 
  //(Mark All as Read)
 router.patch(
   '/mark-all-read',
-  auth(USER_ROLE.superAdmin, USER_ROLE.admin,USER_ROLE.member),
+  auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.member, USER_ROLE.guest),
   NotificationControllers.markAllAsRead
 );
 
 
 router.patch(
   '/mark-read/:id',
-  auth(USER_ROLE.superAdmin, USER_ROLE.admin,USER_ROLE.member),
+  auth(USER_ROLE.superAdmin, USER_ROLE.admin, USER_ROLE.member, USER_ROLE.guest),
   NotificationControllers.markSingleAsRead
 );
 
