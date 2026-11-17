@@ -4,7 +4,7 @@ import { UserModel } from '../modules/User/user.model';
 import config from '../config';
 import { NotificationModel } from '../modules/Notification/notification.model';
 
-// Firebase Initialize
+// Firebase Initializeee
 const serviceAccount = require('../../../firebase-admin-config.json');
 
 if (!admin.apps.length) {
